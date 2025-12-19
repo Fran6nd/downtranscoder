@@ -216,25 +216,12 @@
 		var self = this;
 		this.ajax('GET', OC.generateUrl('/apps/downtranscoder/api/v1/scan'))
 			.then(function(newFiles) {
-				// Add scanned files to Media Found column
-				newFiles.forEach(function(file) {
-					var exists = Object.values(self.columns).some(function(col) {
-						return col.items.some(function(item) { return item.id === file.id; });
-					});
-
-					if (!exists) {
-						self.columns.mediaFound.items.push({
-							id: file.id,
-							name: file.name,
-							size: file.size,
-							path: file.path,
-							state: 'found'
-						});
-					}
-				});
-
-				self.renderColumns();
-				OC.Notification.showTemporary('Found ' + newFiles.length + ' media files');
+				// After scanning, reload all media items from database
+				// This ensures we have the correct database IDs
+				return self.loadMediaItems();
+			})
+			.then(function() {
+				OC.Notification.showTemporary('Scan complete');
 			})
 			.catch(function(error) {
 				console.error('Error scanning:', error);
