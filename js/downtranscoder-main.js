@@ -142,11 +142,20 @@
 		}
 
 		var presetAttr = item.transcodePreset ? this.escapeHtml(item.transcodePreset) : '';
+
+		// Calculate estimated transcoded size
+		var estimatedSize = this.estimateTranscodedSize(item.size, item.transcodePreset);
+		var sizeInfo = '<div class="media-size">' + this.formatSize(item.size);
+		if (estimatedSize && (columnId === 'mediaFound' || columnId === 'toTranscode' || columnId === 'transcoding')) {
+			sizeInfo += ' <span class="size-arrow">→</span> <span class="estimated-size">' + this.formatSize(estimatedSize) + '</span>';
+		}
+		sizeInfo += '</div>';
+
 		return '<div class="media-item" draggable="true" data-item-id="' + item.id + '" data-column-id="' + columnId + '" data-size="' + item.size + '" data-preset="' + presetAttr + '">' +
 			'<div class="media-icon"><span class="icon-video"></span></div>' +
 			'<div class="media-info">' +
 				'<div class="media-name" title="' + this.escapeHtml(item.path) + '">' + this.escapeHtml(item.name) + '</div>' +
-				'<div class="media-size">' + this.formatSize(item.size) + '</div>' +
+				sizeInfo +
 			'</div>' +
 			actionButtons +
 		'</div>';
@@ -434,6 +443,21 @@
 		var sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
 		var i = Math.floor(Math.log(bytes) / Math.log(k));
 		return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+	};
+
+	KanbanApp.prototype.estimateTranscodedSize = function(originalSize, preset) {
+		// Compression ratios based on typical results for different presets
+		// These are conservative estimates
+		var compressionRatios = {
+			'h265_crf23': 0.35,  // High quality, ~35% of original
+			'h265_crf26': 0.25,  // Recommended, ~25% of original
+			'h265_crf28': 0.18,  // Smaller, ~18% of original
+			'h264_crf23': 0.50,  // H.264 is less efficient, ~50% of original
+			'default': 0.30      // Default setting, ~30% of original
+		};
+
+		var ratio = compressionRatios[preset] || compressionRatios['default'];
+		return Math.round(originalSize * ratio);
 	};
 
 	KanbanApp.prototype.escapeHtml = function(text) {

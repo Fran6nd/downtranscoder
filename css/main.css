@@ -79,11 +79,12 @@
 /* Kanban Columns Container */
 .kanban-columns {
     display: grid;
-    grid-template-columns: repeat(6, minmax(200px, 1fr));
+    grid-template-columns: repeat(6, minmax(280px, 320px));
     gap: 20px;
     flex: 1;
     overflow-x: auto;
     min-width: 0;
+    width: fit-content;
 }
 
 /* Individual Column */
@@ -221,6 +222,18 @@
 .media-size {
     font-size: 12px;
     color: var(--color-text-maxcontrast);
+    line-height: 1.4;
+}
+
+.size-arrow {
+    color: var(--color-primary-element);
+    font-weight: bold;
+    margin: 0 4px;
+}
+
+.estimated-size {
+    color: var(--color-success);
+    font-weight: 600;
 }
 
 .media-actions {
@@ -253,7 +266,7 @@
 /* Responsive Design */
 @media (max-width: 900px) {
     .kanban-columns {
-        grid-template-columns: repeat(6, minmax(200px, 1fr));
+        grid-template-columns: repeat(6, minmax(280px, 320px));
     }
 
     .kanban-header {
