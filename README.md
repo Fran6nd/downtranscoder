@@ -4,13 +4,20 @@
 
 ## Features
 
+* **Kanban Board UI** - Visual drag-and-drop interface for managing media workflow
 * Set a **trigger size** (e.g., 10 GB) to identify large videos or images
 * Scan your Nextcloud files and list all media exceeding the trigger size
-* Queue selected media for transcoding
+* **4-Column Workflow**:
+  - Media Found - Scanned files
+  - To Transcode - Queued for processing
+  - Transcoded - Waiting for original deletion
+  - Discard - Files to ignore
+* Drag and drop files between columns with persistent state
 * Background job support for automatic transcoding
 * Review transcoded files before deleting originals
 * Optional automatic deletion with warnings
 * RESTful API for external integrations
+* Responsive mobile-friendly design
 
 ## Supported Media
 
@@ -36,7 +43,20 @@
 1. Clone or download this repository
 2. Place the `downtranscoder` folder in your Nextcloud `apps/` directory
 3. Run `cd apps/downtranscoder && composer install` (if you have composer)
-4. Enable the app in Nextcloud: **Apps** → **Multimedia** → **DownTranscoder** → **Enable**
+4. Install Node.js dependencies and build frontend: `npm install && npm run build`
+5. Enable the app in Nextcloud: **Apps** → **Multimedia** → **DownTranscoder** → **Enable**
+
+### Updating the App
+
+To update to the latest version:
+
+```bash
+cd apps/downtranscoder
+git pull origin main
+npm install
+npm run build
+php occ app:enable downtranscoder
+```
 
 ## Configuration
 
@@ -51,7 +71,21 @@
 
 ## Usage
 
-### Via Web Interface
+### Via Kanban Board (Main Interface)
+
+1. Click **DownTranscoder** in the Nextcloud navigation menu
+2. Click **"Scan Media"** to find large files
+3. **Drag and drop** files between columns:
+   - Move files to **"To Transcode"** to queue them
+   - Click **"Start Transcoding"** to begin processing
+   - Files automatically move to **"Transcoded"** when complete
+   - Delete originals by clicking the delete button
+   - Move unwanted files to **"Discard"**
+4. All changes are automatically saved and persist across sessions
+
+See [QUICKSTART.md](QUICKSTART.md) for detailed usage instructions.
+
+### Via Admin Settings (Legacy)
 
 1. Go to **Settings** → **Administration** → **DownTranscoder**
 2. Click **Scan for Large Files**

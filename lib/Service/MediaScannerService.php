@@ -15,6 +15,7 @@ class MediaScannerService {
     private IRootFolder $rootFolder;
     private IConfig $config;
     private LoggerInterface $logger;
+    private MediaStateService $stateService;
 
     // Supported video extensions
     private const VIDEO_EXTENSIONS = ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'flv', 'webm', 'm4v', 'mpg', 'mpeg', 'ts', 'vob'];
@@ -25,11 +26,13 @@ class MediaScannerService {
     public function __construct(
         IRootFolder $rootFolder,
         IConfig $config,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        MediaStateService $stateService
     ) {
         $this->rootFolder = $rootFolder;
         $this->config = $config;
         $this->logger = $logger;
+        $this->stateService = $stateService;
     }
 
     /**
@@ -86,6 +89,21 @@ class MediaScannerService {
         }
 
         $this->logger->info("Scan complete. Found " . count($largeFiles) . " large media files (scanned {$totalScanned} total items)");
+
+        // Persist scanned files to the kanban board database
+        foreach ($largeFiles as $fileInfo) {
+            try {
+                $this->stateService->addMediaItem(
+                    $fileInfo['id'],
+                    $fileInfo['name'],
+                    $fileInfo['path'],
+                    $fileInfo['size'],
+                    'found' // Initial state is "found"
+                );
+            } catch (\Exception $e) {
+                $this->logger->warning("Could not add media item to database: {$e->getMessage()}");
+            }
+        }
 
         return $largeFiles;
     }
