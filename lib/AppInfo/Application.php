@@ -17,19 +17,21 @@ class Application extends App implements IBootstrap {
     }
 
     public function register(IRegistrationContext $context): void {
-        // Register navigation entry for the main kanban board page
-        $context->registerNavigationEntry(function () {
-            return [
-                'id' => self::APP_ID,
-                'order' => 10,
-                'href' => \OC::$server->getURLGenerator()->linkToRoute('downtranscoder.page.index'),
-                'icon' => \OC::$server->getURLGenerator()->imagePath(self::APP_ID, 'app.svg'),
-                'name' => 'DownTranscoder',
-            ];
-        });
+        // Services are registered here if needed
     }
 
     public function boot(IBootContext $context): void {
-        // Boot logic here if needed
+        $server = $context->getServerContainer();
+
+        // Register navigation entry
+        $server->getNavigationManager()->add(function () use ($server) {
+            return [
+                'id' => self::APP_ID,
+                'order' => 10,
+                'href' => $server->getURLGenerator()->linkToRoute('downtranscoder.page.index'),
+                'icon' => $server->getURLGenerator()->imagePath(self::APP_ID, 'app.svg'),
+                'name' => 'DownTranscoder',
+            ];
+        });
     }
 }
