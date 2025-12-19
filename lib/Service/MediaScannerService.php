@@ -41,30 +41,88 @@ class MediaScannerService {
         $triggerSizeGB = (int) $this->config->getAppValue('downtranscoder', 'trigger_size_gb', '10');
         $triggerSizeBytes = $triggerSizeGB * 1024 * 1024 * 1024;
 
+        // Get configured scan paths
+        $scanPathsJson = $this->config->getAppValue('downtranscoder', 'scan_paths', '[]');
+        $scanPaths = json_decode($scanPathsJson, true) ?: [];
+
+        // Get include external storages setting
+        $includeExternal = $this->config->getAppValue('downtranscoder', 'include_external_storage', 'true') === 'true';
+
         $this->logger->info("Scanning for media files larger than {$triggerSizeGB} GB");
+        if (!empty($scanPaths)) {
+            $this->logger->info("Scan paths configured: " . implode(', ', $scanPaths));
+        } else {
+            $this->logger->info("No specific paths configured, scanning all user files");
+        }
+        $this->logger->info("Include external storages: " . ($includeExternal ? 'Yes' : 'No'));
 
         $largeFiles = [];
         $totalScanned = 0;
 
-        // Get all user folders
-        $userFolders = $this->rootFolder->getDirectoryListing();
-
-        foreach ($userFolders as $userFolder) {
-            if (!$userFolder instanceof Folder) {
-                continue;
+        // If specific paths are configured, scan only those
+        if (!empty($scanPaths)) {
+            foreach ($scanPaths as $scanPath) {
+                $this->logger->debug("Scanning configured path: {$scanPath}");
+                $files = $this->scanPath($scanPath, $triggerSizeBytes, $includeExternal);
+                $largeFiles = array_merge($largeFiles, $files);
+                $totalScanned += count($files);
             }
+        } else {
+            // Otherwise, scan all user folders
+            $userFolders = $this->rootFolder->getDirectoryListing();
 
-            $userName = $userFolder->getName();
-            $this->logger->debug("Scanning user folder: {$userName}");
+            foreach ($userFolders as $userFolder) {
+                if (!$userFolder instanceof Folder) {
+                    continue;
+                }
 
-            $files = $this->scanFolder($userFolder, $triggerSizeBytes);
-            $largeFiles = array_merge($largeFiles, $files);
-            $totalScanned += count($files);
+                $userName = $userFolder->getName();
+                $this->logger->debug("Scanning user folder: {$userName}");
+
+                $files = $this->scanFolder($userFolder, $triggerSizeBytes);
+                $largeFiles = array_merge($largeFiles, $files);
+                $totalScanned += count($files);
+            }
         }
 
         $this->logger->info("Scan complete. Found " . count($largeFiles) . " large media files (scanned {$totalScanned} total items)");
 
         return $largeFiles;
+    }
+
+    /**
+     * Scan a specific path
+     *
+     * @param string $path Path to scan (e.g., "username/files/Movies")
+     * @param int $triggerSizeBytes Minimum file size in bytes
+     * @param bool $includeExternal Include external storages
+     * @return array Array of large media files
+     */
+    private function scanPath(string $path, int $triggerSizeBytes, bool $includeExternal): array {
+        try {
+            // Remove leading/trailing slashes
+            $path = trim($path, '/');
+
+            // Try to get the folder by path
+            $nodes = $this->rootFolder->getByPath('/' . $path);
+
+            if (empty($nodes)) {
+                $this->logger->warning("Path not found: {$path}");
+                return [];
+            }
+
+            $node = $nodes[0] ?? $nodes;
+
+            if (!$node instanceof Folder) {
+                $this->logger->warning("Path is not a folder: {$path}");
+                return [];
+            }
+
+            return $this->scanFolder($node, $triggerSizeBytes);
+        } catch (\Exception $e) {
+            $this->logger->error("Error scanning path {$path}: {$e->getMessage()}");
+            return [];
+        }
     }
 
     /**
