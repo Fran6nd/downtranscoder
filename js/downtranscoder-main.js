@@ -126,10 +126,11 @@
 		// Settings button for toTranscode items
 		if (columnId === 'toTranscode') {
 			actionButtons = '<div class="media-actions">' +
-				'<button class="button-vue btn-settings" title="Transcode Settings">' +
+				'<button class="button-vue btn-settings" title="Transcode Settings" style="background-color: var(--color-primary-element); color: white; padding: 8px;">' +
 					'<span class="icon-settings"></span>' +
 				'</button>' +
 			'</div>';
+			console.log('Adding settings button for item', item.id, 'in column', columnId);
 		}
 
 		var presetIndicator = '';
