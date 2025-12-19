@@ -26,9 +26,11 @@
 
 ## Requirements
 
-* Nextcloud 28 or later
+* Nextcloud 25 or later
 * PHP 8.1 or later
-* FFmpeg installed on the server
+* FFmpeg installed on the server (for transcoding)
+
+**No Node.js or build tools required!**
 
 ## Installation
 
@@ -42,9 +44,10 @@
 
 1. Clone or download this repository
 2. Place the `downtranscoder` folder in your Nextcloud `apps/` directory
-3. Run `cd apps/downtranscoder && composer install` (if you have composer)
-4. Install Node.js dependencies and build frontend: `npm install && npm run build`
-5. Enable the app in Nextcloud: **Apps** → **Multimedia** → **DownTranscoder** → **Enable**
+3. (Optional) Run `cd apps/downtranscoder && composer install` if you have composer
+4. Enable the app in Nextcloud: **Apps** → **Multimedia** → **DownTranscoder** → **Enable**
+
+**No Node.js, npm, or build step required!** The app uses vanilla JavaScript and Nextcloud's built-in libraries.
 
 ### Updating the App
 
@@ -53,10 +56,14 @@ To update to the latest version:
 ```bash
 cd apps/downtranscoder
 git pull origin main
-npm install
-npm run build
+# Optional: if you use composer
+composer install
+# Re-enable the app to run any new migrations
+php occ app:disable downtranscoder
 php occ app:enable downtranscoder
 ```
+
+That's it! No build step needed.
 
 ## Configuration
 
@@ -83,7 +90,7 @@ php occ app:enable downtranscoder
    - Move unwanted files to **"Discard"**
 4. All changes are automatically saved and persist across sessions
 
-See [QUICKSTART.md](QUICKSTART.md) for detailed usage instructions.
+See [USAGE.md](USAGE.md) for detailed usage instructions and troubleshooting.
 
 ### Via Admin Settings (Legacy)
 
