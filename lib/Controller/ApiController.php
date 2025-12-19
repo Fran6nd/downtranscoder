@@ -11,23 +11,27 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 
 class ApiController extends Controller {
     private MediaScannerService $scannerService;
     private TranscodingQueueService $queueService;
     private MediaStateService $stateService;
+    private LoggerInterface $logger;
 
     public function __construct(
         string $appName,
         IRequest $request,
         MediaScannerService $scannerService,
         TranscodingQueueService $queueService,
-        MediaStateService $stateService
+        MediaStateService $stateService,
+        LoggerInterface $logger
     ) {
         parent::__construct($appName, $request);
         $this->scannerService = $scannerService;
         $this->queueService = $queueService;
         $this->stateService = $stateService;
+        $this->logger = $logger;
     }
 
     /**
@@ -182,7 +186,7 @@ class ApiController extends Controller {
             $this->stateService->updateMediaState($fileId, $state);
             return new JSONResponse(['success' => true]);
         } catch (\Exception $e) {
-            \OC::$server->getLogger()->error('Error updating media state for file ' . $fileId . ': ' . $e->getMessage(), ['app' => 'downtranscoder']);
+            $this->logger->error('Error updating media state for file ' . $fileId . ': ' . $e->getMessage(), ['app' => 'downtranscoder']);
             return new JSONResponse(
                 ['error' => $e->getMessage()],
                 Http::STATUS_INTERNAL_SERVER_ERROR
