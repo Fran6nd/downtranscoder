@@ -25,6 +25,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreatedAt(int $createdAt)
  * @method int getUpdatedAt()
  * @method void setUpdatedAt(int $updatedAt)
+ * @method string|null getTranscodePreset()
+ * @method void setTranscodePreset(?string $transcodePreset)
  */
 class MediaItem extends Entity {
     protected $fileId;
@@ -35,6 +37,7 @@ class MediaItem extends Entity {
     protected $state; // 'found', 'queued', 'transcoded', 'discarded'
     protected $createdAt;
     protected $updatedAt;
+    protected $transcodePreset; // e.g., 'h265_crf23', 'h265_crf26', 'h265_crf28', 'h264_crf23'
 
     public function __construct() {
         $this->addType('fileId', 'integer');
@@ -45,6 +48,7 @@ class MediaItem extends Entity {
         $this->addType('state', 'string');
         $this->addType('createdAt', 'integer');
         $this->addType('updatedAt', 'integer');
+        $this->addType('transcodePreset', 'string');
     }
 
     public function jsonSerialize(): array {
@@ -58,6 +62,7 @@ class MediaItem extends Entity {
             'state' => $this->state,
             'createdAt' => $this->createdAt,
             'updatedAt' => $this->updatedAt,
+            'transcodePreset' => $this->transcodePreset,
         ];
     }
 }

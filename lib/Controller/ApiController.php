@@ -210,4 +210,37 @@ class ApiController extends Controller {
             );
         }
     }
+
+    /**
+     * Update the transcode preset for a media item
+     *
+     * @NoAdminRequired
+     */
+    public function updatePreset(int $id): JSONResponse {
+        try {
+            $preset = $this->request->getParam('preset');
+
+            // Validate preset value
+            $allowedPresets = ['h265_crf23', 'h265_crf26', 'h265_crf28', 'h264_crf23', null];
+            if ($preset === '') {
+                $preset = null; // Normalize empty string to null
+            }
+
+            if ($preset !== null && !in_array($preset, $allowedPresets, true)) {
+                return new JSONResponse(
+                    ['error' => 'Invalid preset value'],
+                    Http::STATUS_BAD_REQUEST
+                );
+            }
+
+            $this->stateService->updateTranscodePreset($id, $preset);
+            return new JSONResponse(['success' => true]);
+        } catch (\Exception $e) {
+            $this->logger->error('Error updating preset for record ' . $id . ': ' . $e->getMessage(), ['app' => 'downtranscoder']);
+            return new JSONResponse(
+                ['error' => $e->getMessage()],
+                Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
 }

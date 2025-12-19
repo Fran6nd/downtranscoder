@@ -69,12 +69,45 @@ That's it! No build step needed.
 
 1. Go to **Settings** → **Administration** → **DownTranscoder**
 2. Configure your settings:
-   - **Trigger Size**: Files larger than this will be identified for transcoding
-   - **Video Codec**: Choose H.264, H.265, VP9, or AV1
-   - **Video CRF**: Quality setting (18-28 recommended, lower = better quality)
+   - **Trigger Size**: Files larger than this will be identified for transcoding (e.g., 10 GB)
+   - **Video Codec**: Choose H.265 (HEVC) for best compression
+   - **Video CRF**: 23-28 recommended (higher = smaller file, lower quality)
    - **Image Quality**: JPEG quality (1-100, higher = better quality)
    - **Max Image Dimensions**: Optional resize limits
    - **Auto-Delete Originals**: ⚠️ Use with extreme caution
+
+### Recommended FFmpeg Settings for Size Reduction
+
+To reliably get files below your trigger size while preserving quality, subtitles, and audio tracks:
+
+```bash
+# For H.265 (HEVC) - Best compression
+ffmpeg -i input.mkv -c:v libx265 -crf 26 -preset medium \
+  -c:a copy -c:s copy -map 0 \
+  "input.transcoded.mkv"
+
+# For H.264 - Better compatibility
+ffmpeg -i input.mkv -c:v libx264 -crf 23 -preset medium \
+  -c:a copy -c:s copy -map 0 \
+  "input.transcoded.mkv"
+```
+
+**Key options:**
+- `-c:v libx265` - Use H.265 codec (50% smaller than H.264)
+- `-crf 26` - Constant Rate Factor (23-28 for good quality/size balance)
+- `-preset medium` - Encoding speed (slower = better compression)
+- `-c:a copy` - Copy all audio tracks without re-encoding
+- `-c:s copy` - Copy all subtitle tracks
+- `-map 0` - Include all streams (video, audio, subtitles)
+- `"input.transcoded.mkv"` - Standard naming: original name + `.transcoded` + extension
+
+**CRF Guide:**
+- CRF 18-23: High quality, larger files
+- CRF 23-26: Good balance (recommended)
+- CRF 26-28: Smaller files, acceptable quality
+- CRF 28+: Very small, noticeable quality loss
+
+The app automatically uses these settings and naming conventions.
 
 ## Usage
 

@@ -132,6 +132,30 @@ class MediaStateService {
     }
 
     /**
+     * Update the transcode preset for a media item
+     *
+     * @param int $id Database record ID
+     * @param string|null $preset Preset name or null to use default
+     * @return MediaItem
+     */
+    public function updateTranscodePreset(int $id, ?string $preset): MediaItem {
+        $userId = $this->getUserId();
+
+        // Find by record ID
+        $item = $this->mapper->findById($id);
+
+        // Verify ownership
+        if ($item->getUserId() !== $userId) {
+            throw new \Exception('Access denied');
+        }
+
+        $item->setTranscodePreset($preset);
+        $item->setUpdatedAt(time());
+
+        return $this->mapper->update($item);
+    }
+
+    /**
      * Clean up old discarded items
      */
     public function cleanupOldDiscarded(): int {
