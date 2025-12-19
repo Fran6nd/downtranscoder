@@ -165,7 +165,7 @@ class ApiController extends Controller {
      *
      * @NoAdminRequired
      */
-    public function updateMediaState(int $fileId): JSONResponse {
+    public function updateMediaState(int $id): JSONResponse {
         try {
             $state = $this->request->getParam('state');
 
@@ -183,10 +183,10 @@ class ApiController extends Controller {
                 );
             }
 
-            $this->stateService->updateMediaState($fileId, $state);
+            $this->stateService->updateMediaState($id, $state);
             return new JSONResponse(['success' => true]);
         } catch (\Exception $e) {
-            $this->logger->error('Error updating media state for file ' . $fileId . ': ' . $e->getMessage(), ['app' => 'downtranscoder']);
+            $this->logger->error('Error updating media state for record ' . $id . ': ' . $e->getMessage(), ['app' => 'downtranscoder']);
             return new JSONResponse(
                 ['error' => $e->getMessage()],
                 Http::STATUS_INTERNAL_SERVER_ERROR
@@ -199,9 +199,9 @@ class ApiController extends Controller {
      *
      * @NoAdminRequired
      */
-    public function discardMedia(int $fileId): JSONResponse {
+    public function discardMedia(int $id): JSONResponse {
         try {
-            $this->stateService->updateMediaState($fileId, 'discarded');
+            $this->stateService->updateMediaState($id, 'discarded');
             return new JSONResponse(['success' => true]);
         } catch (\Exception $e) {
             return new JSONResponse(

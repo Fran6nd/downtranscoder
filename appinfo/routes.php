@@ -16,7 +16,7 @@ return [
 
         // Kanban board state management
         ['name' => 'api#getMediaItems', 'url' => '/api/v1/media', 'verb' => 'GET'],
-        ['name' => 'api#updateMediaState', 'url' => '/api/v1/media/{fileId}/state', 'verb' => 'PUT'],
-        ['name' => 'api#discardMedia', 'url' => '/api/v1/media/{fileId}/discard', 'verb' => 'POST'],
+        ['name' => 'api#updateMediaState', 'url' => '/api/v1/media/{id}/state', 'verb' => 'PUT'],
+        ['name' => 'api#discardMedia', 'url' => '/api/v1/media/{id}/discard', 'verb' => 'POST'],
     ],
 ];

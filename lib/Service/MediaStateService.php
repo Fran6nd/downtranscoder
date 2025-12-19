@@ -93,15 +93,27 @@ class MediaStateService {
     }
 
     /**
-     * Update the state of a media item
+     * Update the state of a media item by database record ID
      *
-     * @param int $fileId
+     * @param int $id Database record ID
      * @param string $state New state ('found', 'queued', 'transcoded', 'discarded')
      * @return MediaItem
      */
-    public function updateMediaState(int $fileId, string $state): MediaItem {
+    public function updateMediaState(int $id, string $state): MediaItem {
         $userId = $this->getUserId();
-        return $this->mapper->updateState($fileId, $userId, $state);
+
+        // Find by record ID, not file_id
+        $item = $this->mapper->find($id);
+
+        // Verify ownership
+        if ($item->getUserId() !== $userId) {
+            throw new \Exception('Access denied');
+        }
+
+        $item->setState($state);
+        $item->setUpdatedAt(time());
+
+        return $this->mapper->update($item);
     }
 
     /**
