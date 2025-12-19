@@ -164,9 +164,17 @@ class ApiController extends Controller {
     public function updateMediaState(int $fileId): JSONResponse {
         try {
             $state = $this->request->getParam('state');
+
+            if (!$state) {
+                return new JSONResponse(
+                    ['error' => 'State parameter is required'],
+                    Http::STATUS_BAD_REQUEST
+                );
+            }
+
             if (!in_array($state, ['found', 'queued', 'transcoded', 'discarded'])) {
                 return new JSONResponse(
-                    ['error' => 'Invalid state'],
+                    ['error' => 'Invalid state: ' . $state],
                     Http::STATUS_BAD_REQUEST
                 );
             }
@@ -174,6 +182,7 @@ class ApiController extends Controller {
             $this->stateService->updateMediaState($fileId, $state);
             return new JSONResponse(['success' => true]);
         } catch (\Exception $e) {
+            \OC::$server->getLogger()->error('Error updating media state for file ' . $fileId . ': ' . $e->getMessage(), ['app' => 'downtranscoder']);
             return new JSONResponse(
                 ['error' => $e->getMessage()],
                 Http::STATUS_INTERNAL_SERVER_ERROR

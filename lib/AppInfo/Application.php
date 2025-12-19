@@ -21,17 +21,6 @@ class Application extends App implements IBootstrap {
     }
 
     public function boot(IBootContext $context): void {
-        $server = $context->getServerContainer();
-
-        // Register navigation entry
-        $server->getNavigationManager()->add(function () use ($server) {
-            return [
-                'id' => self::APP_ID,
-                'order' => 10,
-                'href' => $server->getURLGenerator()->linkToRoute('downtranscoder.page.index'),
-                'icon' => $server->getURLGenerator()->imagePath(self::APP_ID, 'app.svg'),
-                'name' => 'DownTranscoder',
-            ];
-        });
+        // Boot logic here if needed
     }
 }
