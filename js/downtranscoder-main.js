@@ -75,8 +75,10 @@
 		columnsContainer.innerHTML = '';
 		var self = this;
 
+		console.log('DownTranscoder: Rendering columns:', this.columnOrder);
 		this.columnOrder.forEach(function(columnId) {
 			var column = self.columns[columnId];
+			console.log('DownTranscoder: Rendering column:', columnId, column);
 			var columnEl = self.createColumnElement(column);
 			columnsContainer.appendChild(columnEl);
 		});
