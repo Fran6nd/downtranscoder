@@ -473,7 +473,13 @@
     opacity: 0.8;
 }
 
-/* Context Menu for ToTranscode Items */
-.has-context-menu {
-    cursor: context-menu;
+/* Settings button for media items */
+.media-item .btn-settings {
+    padding: 6px 8px;
+    min-width: auto;
+}
+
+.media-item .btn-settings .icon-settings {
+    width: 16px;
+    height: 16px;
 }

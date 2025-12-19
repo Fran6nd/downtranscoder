@@ -112,11 +112,22 @@
 	};
 
 	KanbanApp.prototype.createMediaItemHtml = function(item, columnId) {
-		var deleteBtn = '';
+		var actionButtons = '';
+
+		// Delete button for transcoded items
 		if (columnId === 'transcoded') {
-			deleteBtn = '<div class="media-actions">' +
+			actionButtons = '<div class="media-actions">' +
 				'<button class="button-vue button-vue--error btn-delete" data-file-id="' + item.id + '" title="Delete original file">' +
 					'<span class="icon-delete"></span>' +
+				'</button>' +
+			'</div>';
+		}
+
+		// Settings button for toTranscode items
+		if (columnId === 'toTranscode') {
+			actionButtons = '<div class="media-actions">' +
+				'<button class="button-vue btn-settings" title="Transcode Settings">' +
+					'<span class="icon-settings"></span>' +
 				'</button>' +
 			'</div>';
 		}
@@ -129,20 +140,15 @@
 			'</div>';
 		}
 
-		var itemClasses = 'media-item';
-		if (columnId === 'toTranscode') {
-			itemClasses += ' has-context-menu';
-		}
-
 		var presetAttr = item.transcodePreset ? this.escapeHtml(item.transcodePreset) : '';
-		return '<div class="' + itemClasses + '" draggable="true" data-item-id="' + item.id + '" data-column-id="' + columnId + '" data-size="' + item.size + '" data-preset="' + presetAttr + '">' +
+		return '<div class="media-item" draggable="true" data-item-id="' + item.id + '" data-column-id="' + columnId + '" data-size="' + item.size + '" data-preset="' + presetAttr + '">' +
 			'<div class="media-icon"><span class="icon-video"></span></div>' +
 			'<div class="media-info">' +
 				'<div class="media-name" title="' + this.escapeHtml(item.path) + '">' + this.escapeHtml(item.name) + '</div>' +
 				'<div class="media-size">' + this.formatSize(item.size) + '</div>' +
 				presetIndicator +
 			'</div>' +
-			deleteBtn +
+			actionButtons +
 		'</div>';
 	};
 
@@ -183,18 +189,22 @@
 				e.dataTransfer.effectAllowed = 'move';
 			});
 
-			// Setup right-click context menu for toTranscode items
+			// Setup settings button for toTranscode items
 			if (column.id === 'toTranscode') {
-				item.addEventListener('contextmenu', function(e) {
-					e.preventDefault();
-					console.log('Context menu triggered for item', item.dataset.itemId);
-					var itemId = parseInt(item.dataset.itemId);
-					var itemSize = parseInt(item.dataset.size);
-					var currentPreset = item.dataset.preset || null;
-					if (currentPreset === '') currentPreset = null;
-					console.log('Showing context menu', { itemId: itemId, itemSize: itemSize, currentPreset: currentPreset });
-					self.showPresetContextMenu(e.clientX, e.clientY, itemId, itemSize, currentPreset);
-				});
+				var settingsBtn = item.querySelector('.btn-settings');
+				if (settingsBtn) {
+					settingsBtn.addEventListener('click', function(e) {
+						e.stopPropagation();
+						var itemId = parseInt(item.dataset.itemId);
+						var itemSize = parseInt(item.dataset.size);
+						var currentPreset = item.dataset.preset || null;
+						if (currentPreset === '') currentPreset = null;
+
+						// Position menu near the button
+						var rect = settingsBtn.getBoundingClientRect();
+						self.showPresetContextMenu(rect.right + 5, rect.top, itemId, itemSize, currentPreset);
+					});
+				}
 			}
 		});
 
@@ -402,7 +412,6 @@
 
 	KanbanApp.prototype.showPresetContextMenu = function(x, y, itemId, itemSize, currentPreset) {
 		var self = this;
-		console.log('showPresetContextMenu called', { x: x, y: y, itemId: itemId, itemSize: itemSize, currentPreset: currentPreset });
 
 		// Remove any existing context menu
 		this.hidePresetContextMenu();
