@@ -117,6 +117,7 @@
 
 	KanbanApp.prototype.createMediaItemHtml = function(item, columnId) {
 		var actionButtons = '';
+		var presetDropdown = '';
 
 		// Delete button for transcoded items
 		if (columnId === 'transcoded') {
@@ -127,35 +128,35 @@
 			'</div>';
 		}
 
-		// Preset dropdown for toTranscode items
+		// Preset dropdown for toTranscode items - now under filename
 		if (columnId === 'toTranscode') {
 			var currentPreset = item.transcodePreset || '';
-			actionButtons = '<div class="media-actions">' +
-				'<select class="preset-select" data-item-id="' + item.id + '" title="Transcode Preset">' +
-					'<option value="" ' + (currentPreset === '' ? 'selected' : '') + '>Default Settings</option>' +
-					'<option value="h265_crf23" ' + (currentPreset === 'h265_crf23' ? 'selected' : '') + '>H.265 CRF 23 (High Quality)</option>' +
-					'<option value="h265_crf26" ' + (currentPreset === 'h265_crf26' ? 'selected' : '') + '>H.265 CRF 26 (Recommended)</option>' +
-					'<option value="h265_crf28" ' + (currentPreset === 'h265_crf28' ? 'selected' : '') + '>H.265 CRF 28 (Smaller)</option>' +
-					'<option value="h264_crf23" ' + (currentPreset === 'h264_crf23' ? 'selected' : '') + '>H.264 CRF 23 (Compatible)</option>' +
-				'</select>' +
-			'</div>';
+			var defaultEstimate = this.formatSize(this.estimateTranscodedSize(item.size, null));
+			var h265_23_estimate = this.formatSize(this.estimateTranscodedSize(item.size, 'h265_crf23'));
+			var h265_26_estimate = this.formatSize(this.estimateTranscodedSize(item.size, 'h265_crf26'));
+			var h265_28_estimate = this.formatSize(this.estimateTranscodedSize(item.size, 'h265_crf28'));
+			var h264_23_estimate = this.formatSize(this.estimateTranscodedSize(item.size, 'h264_crf23'));
+
+			presetDropdown = '<select class="preset-select" data-item-id="' + item.id + '" title="Transcode Preset">' +
+				'<option value="" ' + (currentPreset === '' ? 'selected' : '') + '>Default (~' + defaultEstimate + ')</option>' +
+				'<option value="h265_crf23" ' + (currentPreset === 'h265_crf23' ? 'selected' : '') + '>H.265 CRF 23 (~' + h265_23_estimate + ')</option>' +
+				'<option value="h265_crf26" ' + (currentPreset === 'h265_crf26' ? 'selected' : '') + '>H.265 CRF 26 (~' + h265_26_estimate + ')</option>' +
+				'<option value="h265_crf28" ' + (currentPreset === 'h265_crf28' ? 'selected' : '') + '>H.265 CRF 28 (~' + h265_28_estimate + ')</option>' +
+				'<option value="h264_crf23" ' + (currentPreset === 'h264_crf23' ? 'selected' : '') + '>H.264 CRF 23 (~' + h264_23_estimate + ')</option>' +
+			'</select>';
 		}
 
 		var presetAttr = item.transcodePreset ? this.escapeHtml(item.transcodePreset) : '';
 
-		// Calculate estimated transcoded size
-		var estimatedSize = this.estimateTranscodedSize(item.size, item.transcodePreset);
-		var sizeInfo = '<div class="media-size">' + this.formatSize(item.size);
-		if (estimatedSize && (columnId === 'mediaFound' || columnId === 'toTranscode' || columnId === 'transcoding')) {
-			sizeInfo += ' <span class="size-arrow">→</span> <span class="estimated-size">' + this.formatSize(estimatedSize) + '</span>';
-		}
-		sizeInfo += '</div>';
+		// Show original size
+		var sizeInfo = '<div class="media-size">' + this.formatSize(item.size) + '</div>';
 
 		return '<div class="media-item" draggable="true" data-item-id="' + item.id + '" data-column-id="' + columnId + '" data-size="' + item.size + '" data-preset="' + presetAttr + '">' +
 			'<div class="media-icon"><span class="icon-video"></span></div>' +
 			'<div class="media-info">' +
 				'<div class="media-name" title="' + this.escapeHtml(item.path) + '">' + this.escapeHtml(item.name) + '</div>' +
 				sizeInfo +
+				presetDropdown +
 			'</div>' +
 			actionButtons +
 		'</div>';
