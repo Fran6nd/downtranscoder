@@ -126,11 +126,10 @@
 		// Settings button for toTranscode items
 		if (columnId === 'toTranscode') {
 			actionButtons = '<div class="media-actions">' +
-				'<button class="button-vue btn-settings" title="Transcode Settings" style="background-color: var(--color-primary-element); color: white; padding: 8px;">' +
-					'<span class="icon-settings"></span>' +
+				'<button class="button-vue btn-settings" title="Transcode Settings">' +
+					'<span class="icon icon-settings-dark"></span>' +
 				'</button>' +
 			'</div>';
-			console.log('Adding settings button for item', item.id, 'in column', columnId);
 		}
 
 		var presetIndicator = '';
@@ -232,17 +231,9 @@
 				// Distribute items to columns
 				items.forEach(function(item) {
 					var columnId = self.getColumnForState(item.state);
-					console.log('Item', item.id, 'state:', item.state, 'going to column:', columnId);
 					if (columnId && self.columns[columnId]) {
 						self.columns[columnId].items.push(item);
 					}
-				});
-
-				console.log('Columns after distribution:', {
-					mediaFound: self.columns.mediaFound.items.length,
-					toTranscode: self.columns.toTranscode.items.length,
-					transcoded: self.columns.transcoded.items.length,
-					discard: self.columns.discard.items.length
 				});
 
 				self.renderColumns();
