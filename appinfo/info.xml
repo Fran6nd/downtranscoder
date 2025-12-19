@@ -46,4 +46,11 @@
     <background-jobs>
         <job>OCA\DownTranscoder\BackgroundJob\TranscodeJob</job>
     </background-jobs>
+    <navigations>
+        <navigation>
+            <name>DownTranscoder</name>
+            <route>downtranscoder.page.index</route>
+            <order>10</order>
+        </navigation>
+    </navigations>
 </info>
