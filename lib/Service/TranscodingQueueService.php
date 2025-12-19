@@ -15,6 +15,7 @@ class TranscodingQueueService {
     private LoggerInterface $logger;
     private MediaScannerService $scannerService;
     private TranscodingService $transcodingService;
+    private MediaStateService $stateService;
 
     private const QUEUE_KEY = 'transcode_queue';
     private const STATUS_KEY = 'transcode_status';
@@ -24,13 +25,15 @@ class TranscodingQueueService {
         IConfig $config,
         LoggerInterface $logger,
         MediaScannerService $scannerService,
-        TranscodingService $transcodingService
+        TranscodingService $transcodingService,
+        MediaStateService $stateService
     ) {
         $this->rootFolder = $rootFolder;
         $this->config = $config;
         $this->logger = $logger;
         $this->scannerService = $scannerService;
         $this->transcodingService = $transcodingService;
+        $this->stateService = $stateService;
     }
 
     /**
@@ -164,6 +167,19 @@ class TranscodingQueueService {
             return false;
         }
 
+        // Update state to 'transcoding' in the database by fileId
+        try {
+            $mediaItem = $this->stateService->getMediaItemsByState('queued');
+            foreach ($mediaItem as $item) {
+                if ($item['fileId'] === $fileId) {
+                    $this->stateService->updateMediaState($item['id'], 'transcoding');
+                    break;
+                }
+            }
+        } catch (\Exception $e) {
+            $this->logger->warning("Could not update media state to transcoding: " . $e->getMessage());
+        }
+
         $extension = strtolower(pathinfo($file->getName(), PATHINFO_EXTENSION));
         $inputPath = $file->getStorage()->getLocalFile($file->getInternalPath());
 
@@ -192,6 +208,19 @@ class TranscodingQueueService {
         if ($success) {
             $this->logger->info("Successfully transcoded file {$fileId}");
 
+            // Update state to 'transcoded' in the database
+            try {
+                $mediaItem = $this->stateService->getMediaItemsByState('transcoding');
+                foreach ($mediaItem as $item) {
+                    if ($item['fileId'] === $fileId) {
+                        $this->stateService->updateMediaState($item['id'], 'transcoded');
+                        break;
+                    }
+                }
+            } catch (\Exception $e) {
+                $this->logger->warning("Could not update media state to transcoded: " . $e->getMessage());
+            }
+
             // Check if auto-delete is enabled
             $autoDelete = $this->config->getAppValue('downtranscoder', 'auto_delete_originals', 'false') === 'true';
             if ($autoDelete) {
@@ -203,6 +232,19 @@ class TranscodingQueueService {
             }
         } else {
             $this->logger->error("Failed to transcode file {$fileId}");
+
+            // Update state to 'aborted' in the database
+            try {
+                $mediaItem = $this->stateService->getMediaItemsByState('transcoding');
+                foreach ($mediaItem as $item) {
+                    if ($item['fileId'] === $fileId) {
+                        $this->stateService->updateMediaState($item['id'], 'aborted');
+                        break;
+                    }
+                }
+            } catch (\Exception $e) {
+                $this->logger->warning("Could not update media state to aborted: " . $e->getMessage());
+            }
         }
 
         return $success;

@@ -34,7 +34,7 @@ class MediaItem extends Entity {
     protected $name;
     protected $path;
     protected $size;
-    protected $state; // 'found', 'queued', 'transcoded', 'discarded'
+    protected $state; // 'found', 'queued', 'transcoding', 'transcoded', 'aborted', 'discarded'
     protected $createdAt;
     protected $updatedAt;
     protected $transcodePreset; // e.g., 'h265_crf23', 'h265_crf26', 'h265_crf28', 'h264_crf23'

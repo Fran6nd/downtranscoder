@@ -19,11 +19,12 @@
 		this.columns = {
 			mediaFound: { id: 'mediaFound', title: 'Media Found', icon: 'icon-search', items: [], allowDrop: true },
 			toTranscode: { id: 'toTranscode', title: 'To Transcode', icon: 'icon-play', items: [], allowDrop: true },
+			transcoding: { id: 'transcoding', title: 'Transcoding In Progress', icon: 'icon-loading-small', items: [], allowDrop: false },
 			transcoded: { id: 'transcoded', title: 'Transcoded (Waiting for Deletion)', icon: 'icon-checkmark', items: [], allowDrop: false },
 			aborted: { id: 'aborted', title: 'Aborted', icon: 'icon-error', items: [], allowDrop: true },
 			discard: { id: 'discard', title: 'Discard', icon: 'icon-delete', items: [], allowDrop: true }
 		};
-		this.columnOrder = ['mediaFound', 'toTranscode', 'transcoded', 'aborted', 'discard'];
+		this.columnOrder = ['mediaFound', 'toTranscode', 'transcoding', 'transcoded', 'aborted', 'discard'];
 		this.isScanning = false;
 		this.statusInterval = null;
 	}
@@ -144,7 +145,6 @@
 			'<div class="media-info">' +
 				'<div class="media-name" title="' + this.escapeHtml(item.path) + '">' + this.escapeHtml(item.name) + '</div>' +
 				'<div class="media-size">' + this.formatSize(item.size) + '</div>' +
-				presetIndicator +
 			'</div>' +
 			actionButtons +
 		'</div>';
@@ -342,16 +342,49 @@
 		var self = this;
 		this.ajax('GET', OC.generateUrl('/apps/downtranscoder/api/v1/transcode/status'))
 			.then(function(status) {
-				if (status.completed && status.completed.length > 0) {
-					status.completed.forEach(function(fileId) {
-						var index = self.columns.toTranscode.items.findIndex(function(item) { return item.id === fileId; });
-						if (index !== -1) {
-							var item = self.columns.toTranscode.items[index];
-							self.columns.toTranscode.items.splice(index, 1);
-							item.state = 'transcoded';
-							self.columns.transcoded.items.push(item);
+				var needsRefresh = false;
+
+				// Handle items that are now transcoding
+				if (status.transcoding && status.transcoding.length > 0) {
+					status.transcoding.forEach(function(itemId) {
+						// Check if item is in toTranscode and move it to transcoding
+						var toTranscodeIndex = self.columns.toTranscode.items.findIndex(function(item) { return item.id === itemId; });
+						if (toTranscodeIndex !== -1) {
+							var item = self.columns.toTranscode.items[toTranscodeIndex];
+							self.columns.toTranscode.items.splice(toTranscodeIndex, 1);
+							item.state = 'transcoding';
+							self.columns.transcoding.items.push(item);
+							needsRefresh = true;
 						}
 					});
+				}
+
+				// Handle items that are now completed
+				if (status.completed && status.completed.length > 0) {
+					status.completed.forEach(function(itemId) {
+						// Check if item is in transcoding and move it to transcoded
+						var transcodingIndex = self.columns.transcoding.items.findIndex(function(item) { return item.id === itemId; });
+						if (transcodingIndex !== -1) {
+							var item = self.columns.transcoding.items[transcodingIndex];
+							self.columns.transcoding.items.splice(transcodingIndex, 1);
+							item.state = 'transcoded';
+							self.columns.transcoded.items.push(item);
+							needsRefresh = true;
+						}
+
+						// Also check toTranscode in case status update was missed
+						var toTranscodeIndex = self.columns.toTranscode.items.findIndex(function(item) { return item.id === itemId; });
+						if (toTranscodeIndex !== -1) {
+							var item = self.columns.toTranscode.items[toTranscodeIndex];
+							self.columns.toTranscode.items.splice(toTranscodeIndex, 1);
+							item.state = 'transcoded';
+							self.columns.transcoded.items.push(item);
+							needsRefresh = true;
+						}
+					});
+				}
+
+				if (needsRefresh) {
 					self.renderColumns();
 				}
 			})
@@ -373,6 +406,7 @@
 		var stateMap = {
 			'found': 'mediaFound',
 			'queued': 'toTranscode',
+			'transcoding': 'transcoding',
 			'transcoded': 'transcoded',
 			'aborted': 'aborted',
 			'discarded': 'discard'
@@ -384,6 +418,7 @@
 		var columnMap = {
 			'mediaFound': 'found',
 			'toTranscode': 'queued',
+			'transcoding': 'transcoding',
 			'transcoded': 'transcoded',
 			'aborted': 'aborted',
 			'discard': 'discarded'

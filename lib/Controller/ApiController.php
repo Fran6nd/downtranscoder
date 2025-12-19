@@ -118,6 +118,14 @@ class ApiController extends Controller {
     public function getStatus(): JSONResponse {
         try {
             $status = $this->queueService->getStatus();
+
+            // Add information about files that have changed state
+            $transcodingItems = $this->stateService->getMediaItemsByState('transcoding');
+            $transcodedItems = $this->stateService->getMediaItemsByState('transcoded');
+
+            $status['transcoding'] = array_map(fn($item) => $item['id'], $transcodingItems);
+            $status['completed'] = array_map(fn($item) => $item['id'], $transcodedItems);
+
             return new JSONResponse($status);
         } catch (\Exception $e) {
             return new JSONResponse(
@@ -176,7 +184,7 @@ class ApiController extends Controller {
                 );
             }
 
-            if (!in_array($state, ['found', 'queued', 'transcoded', 'aborted', 'discarded'])) {
+            if (!in_array($state, ['found', 'queued', 'transcoding', 'transcoded', 'aborted', 'discarded'])) {
                 return new JSONResponse(
                     ['error' => 'Invalid state: ' . $state],
                     Http::STATUS_BAD_REQUEST
