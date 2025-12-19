@@ -187,9 +187,12 @@
 			if (column.id === 'toTranscode') {
 				item.addEventListener('contextmenu', function(e) {
 					e.preventDefault();
+					console.log('Context menu triggered for item', item.dataset.itemId);
 					var itemId = parseInt(item.dataset.itemId);
 					var itemSize = parseInt(item.dataset.size);
 					var currentPreset = item.dataset.preset || null;
+					if (currentPreset === '') currentPreset = null;
+					console.log('Showing context menu', { itemId: itemId, itemSize: itemSize, currentPreset: currentPreset });
 					self.showPresetContextMenu(e.clientX, e.clientY, itemId, itemSize, currentPreset);
 				});
 			}
@@ -399,6 +402,7 @@
 
 	KanbanApp.prototype.showPresetContextMenu = function(x, y, itemId, itemSize, currentPreset) {
 		var self = this;
+		console.log('showPresetContextMenu called', { x: x, y: y, itemId: itemId, itemSize: itemSize, currentPreset: currentPreset });
 
 		// Remove any existing context menu
 		this.hidePresetContextMenu();
