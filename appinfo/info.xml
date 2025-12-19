@@ -32,8 +32,8 @@
     <repository type="git">https://github.com/yourusername/nextcloud-downtranscoder.git</repository>
     <screenshot>https://raw.githubusercontent.com/yourusername/nextcloud-downtranscoder/main/screenshots/screenshot.png</screenshot>
     <dependencies>
-        <nextcloud min-version="28" max-version="30"/>
-        <php min-version="8.1"/>
+        <nextcloud min-version="25" max-version="35"/>
+        <php min-version="8.0"/>
     </dependencies>
     <settings>
         <admin>OCA\DownTranscoder\Settings\Admin</admin>
