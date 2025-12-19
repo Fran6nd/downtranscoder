@@ -176,7 +176,7 @@ class ApiController extends Controller {
                 );
             }
 
-            if (!in_array($state, ['found', 'queued', 'transcoded', 'discarded'])) {
+            if (!in_array($state, ['found', 'queued', 'transcoded', 'aborted', 'discarded'])) {
                 return new JSONResponse(
                     ['error' => 'Invalid state: ' . $state],
                     Http::STATUS_BAD_REQUEST

@@ -20,9 +20,10 @@
 			mediaFound: { id: 'mediaFound', title: 'Media Found', icon: 'icon-search', items: [], allowDrop: true },
 			toTranscode: { id: 'toTranscode', title: 'To Transcode', icon: 'icon-play', items: [], allowDrop: true },
 			transcoded: { id: 'transcoded', title: 'Transcoded (Waiting for Deletion)', icon: 'icon-checkmark', items: [], allowDrop: false },
+			aborted: { id: 'aborted', title: 'Aborted', icon: 'icon-error', items: [], allowDrop: true },
 			discard: { id: 'discard', title: 'Discard', icon: 'icon-delete', items: [], allowDrop: true }
 		};
-		this.columnOrder = ['mediaFound', 'toTranscode', 'transcoded', 'discard'];
+		this.columnOrder = ['mediaFound', 'toTranscode', 'transcoded', 'aborted', 'discard'];
 		this.isScanning = false;
 		this.statusInterval = null;
 	}
@@ -373,6 +374,7 @@
 			'found': 'mediaFound',
 			'queued': 'toTranscode',
 			'transcoded': 'transcoded',
+			'aborted': 'aborted',
 			'discarded': 'discard'
 		};
 		return stateMap[state] || 'mediaFound';
@@ -383,6 +385,7 @@
 			'mediaFound': 'found',
 			'toTranscode': 'queued',
 			'transcoded': 'transcoded',
+			'aborted': 'aborted',
 			'discard': 'discarded'
 		};
 		return columnMap[columnId] || 'found';

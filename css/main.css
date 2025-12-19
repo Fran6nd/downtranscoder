@@ -79,7 +79,7 @@
 /* Kanban Columns Container */
 .kanban-columns {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 20px;
     flex: 1;
     overflow-x: auto;
