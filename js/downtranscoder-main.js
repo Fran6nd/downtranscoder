@@ -232,9 +232,17 @@
 				// Distribute items to columns
 				items.forEach(function(item) {
 					var columnId = self.getColumnForState(item.state);
+					console.log('Item', item.id, 'state:', item.state, 'going to column:', columnId);
 					if (columnId && self.columns[columnId]) {
 						self.columns[columnId].items.push(item);
 					}
+				});
+
+				console.log('Columns after distribution:', {
+					mediaFound: self.columns.mediaFound.items.length,
+					toTranscode: self.columns.toTranscode.items.length,
+					transcoded: self.columns.transcoded.items.length,
+					discard: self.columns.discard.items.length
 				});
 
 				self.renderColumns();
