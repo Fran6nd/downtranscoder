@@ -102,8 +102,8 @@ class MediaStateService {
     public function updateMediaState(int $id, string $state): MediaItem {
         $userId = $this->getUserId();
 
-        // Find by record ID, not file_id
-        $item = $this->mapper->find($id);
+        // Find by record ID
+        $item = $this->mapper->findById($id);
 
         // Verify ownership
         if ($item->getUserId() !== $userId) {
