@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+    <id>downtranscoder</id>
+    <name>DownTranscoder</name>
+    <summary>Automatically identify and transcode large media files to save storage space</summary>
+    <description><![CDATA[
+**DownTranscoder** helps you manage large media files by automatically identifying and transcoding them to smaller sizes.
+
+## Features
+
+* Set a trigger size (e.g., 10 GB) to identify large videos or images
+* List all media exceeding this size
+* Queue selected media for automatic transcoding at scheduled times
+* Review transcoded files before deleting originals
+* Optional automatic deletion with warnings
+
+## Supported Media
+
+* Video files (MP4, MKV, AVI, etc.)
+* Image files (JPG, PNG, etc.)
+
+⚠️ **Warning**: Automatic deletion is risky — always double-check before enabling it.
+    ]]></description>
+    <version>1.0.0</version>
+    <licence>agpl</licence>
+    <author mail="you@example.com" homepage="https://github.com/yourusername">Your Name</author>
+    <namespace>DownTranscoder</namespace>
+    <category>multimedia</category>
+    <category>tools</category>
+    <bugs>https://github.com/yourusername/nextcloud-downtranscoder/issues</bugs>
+    <repository type="git">https://github.com/yourusername/nextcloud-downtranscoder.git</repository>
+    <screenshot>https://raw.githubusercontent.com/yourusername/nextcloud-downtranscoder/main/screenshots/screenshot.png</screenshot>
+    <dependencies>
+        <nextcloud min-version="28" max-version="30"/>
+        <php min-version="8.1"/>
+    </dependencies>
+    <settings>
+        <admin>OCA\DownTranscoder\Settings\Admin</admin>
+        <admin-section>OCA\DownTranscoder\Settings\AdminSection</admin-section>
+    </settings>
+    <commands>
+        <command>OCA\DownTranscoder\Command\ScanCommand</command>
+        <command>OCA\DownTranscoder\Command\TranscodeCommand</command>
+    </commands>
+    <background-jobs>
+        <job>OCA\DownTranscoder\BackgroundJob\TranscodeJob</job>
+    </background-jobs>
+</info>

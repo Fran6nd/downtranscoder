@@ -1,0 +1,73 @@
+#downtranscoder-admin {
+    padding: 20px;
+}
+
+#downtranscoder-admin h2 {
+    margin-bottom: 20px;
+}
+
+#downtranscoder-admin h3 {
+    margin-top: 30px;
+    margin-bottom: 15px;
+    color: var(--color-main-text);
+    font-weight: bold;
+}
+
+.downtranscoder-settings p {
+    margin-bottom: 15px;
+}
+
+.downtranscoder-settings label {
+    display: inline-block;
+    min-width: 200px;
+    font-weight: bold;
+}
+
+.downtranscoder-settings input[type="number"],
+.downtranscoder-settings select {
+    width: 200px;
+    padding: 5px;
+}
+
+.downtranscoder-settings em {
+    display: block;
+    margin-top: 5px;
+    margin-left: 205px;
+    color: var(--color-text-maxcontrast);
+    font-size: 0.9em;
+}
+
+#downtranscoder-scan-section {
+    border-top: 1px solid var(--color-border);
+    padding-top: 20px;
+}
+
+#scan-results table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+#scan-results th,
+#scan-results td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+}
+
+#scan-results th {
+    background-color: var(--color-background-dark);
+    font-weight: bold;
+}
+
+#scan-results tr:hover {
+    background-color: var(--color-background-hover);
+}
+
+.file-checkbox {
+    cursor: pointer;
+}
+
+#select-all-files {
+    cursor: pointer;
+}

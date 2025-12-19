@@ -1,0 +1,29 @@
+{
+    "name": "nextcloud/downtranscoder",
+    "description": "Nextcloud app to identify and transcode large media files",
+    "type": "project",
+    "license": "AGPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "Your Name",
+            "email": "you@example.com"
+        }
+    ],
+    "require": {
+        "php": "^8.1"
+    },
+    "require-dev": {
+        "nextcloud/coding-standard": "^1.0",
+        "phpunit/phpunit": "^9.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "OCA\\DownTranscoder\\": "lib/"
+        }
+    },
+    "scripts": {
+        "lint": "find . -name \\*.php -not -path './vendor/*' -print0 | xargs -0 -n1 php -l",
+        "cs:check": "php-cs-fixer fix --dry-run --diff",
+        "cs:fix": "php-cs-fixer fix"
+    }
+}
