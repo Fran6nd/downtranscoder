@@ -114,7 +114,8 @@ class MediaScannerService {
                     $fileInfo['name'],
                     $fileInfo['path'],
                     $fileInfo['size'],
-                    'found' // Initial state is "found"
+                    'found', // Initial state is "found"
+                    $fileInfo['owner'] // Pass the file owner for background job context
                 );
             } catch (\Exception $e) {
                 $this->logger->warning("Could not add media item to database: {$e->getMessage()}");

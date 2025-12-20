@@ -57,6 +57,7 @@ class MediaStateService {
      * @param string $path File path
      * @param int $size File size in bytes
      * @param string $state Initial state (default: 'found')
+     * @param string|null $userId User ID (null = use current user session)
      * @return MediaItem
      */
     public function addMediaItem(
@@ -64,9 +65,13 @@ class MediaStateService {
         string $name,
         string $path,
         int $size,
-        string $state = 'found'
+        string $state = 'found',
+        ?string $userId = null
     ): MediaItem {
-        $userId = $this->getUserId();
+        // If userId not provided, get from session (for non-background contexts)
+        if ($userId === null) {
+            $userId = $this->getUserId();
+        }
 
         // Check if item already exists
         try {
