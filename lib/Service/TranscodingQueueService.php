@@ -106,9 +106,10 @@ class TranscodingQueueService {
      * @return bool Success
      */
     public function startTranscoding(): bool {
-        $queue = $this->getQueue();
+        // Get items from the new database-based system with state='queued'
+        $queuedItems = $this->stateService->getMediaItemsByState('queued');
 
-        if (empty($queue)) {
+        if (empty($queuedItems)) {
             $this->logger->info("No items in transcode queue");
             return true;
         }
@@ -116,33 +117,21 @@ class TranscodingQueueService {
         $this->setStatus([
             'is_transcoding' => true,
             'current_index' => 0,
-            'total_items' => count($queue),
+            'total_items' => count($queuedItems),
             'started_at' => time(),
         ]);
 
-        $this->logger->info("Starting transcoding of " . count($queue) . " items");
+        $this->logger->info("Starting transcoding of " . count($queuedItems) . " items");
 
-        foreach ($queue as $index => $item) {
+        foreach ($queuedItems as $index => $item) {
             $this->setStatus([
                 'is_transcoding' => true,
                 'current_index' => $index + 1,
-                'total_items' => count($queue),
+                'total_items' => count($queuedItems),
                 'current_file' => $item['name'],
             ]);
 
-            $success = $this->transcodeFile($item['id']);
-
-            if ($success) {
-                $item['status'] = 'completed';
-                $item['completed_at'] = time();
-            } else {
-                $item['status'] = 'failed';
-                $item['error'] = 'Transcoding failed';
-            }
-
-            // Update queue with status
-            $queue[$index] = $item;
-            $this->config->setAppValue('downtranscoder', self::QUEUE_KEY, json_encode($queue));
+            $this->transcodeFile($item['fileId']);
         }
 
         $this->setStatus([
