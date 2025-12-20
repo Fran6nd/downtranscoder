@@ -9,11 +9,13 @@ use OCP\Files\Node;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\IConfig;
+use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 
 class MediaScannerService {
     private IRootFolder $rootFolder;
     private IConfig $config;
+    private IUserManager $userManager;
     private LoggerInterface $logger;
     private MediaStateService $stateService;
 
@@ -28,11 +30,13 @@ class MediaScannerService {
     public function __construct(
         IRootFolder $rootFolder,
         IConfig $config,
+        IUserManager $userManager,
         LoggerInterface $logger,
         MediaStateService $stateService
     ) {
         $this->rootFolder = $rootFolder;
         $this->config = $config;
+        $this->userManager = $userManager;
         $this->logger = $logger;
         $this->stateService = $stateService;
     }
@@ -87,21 +91,25 @@ class MediaScannerService {
                 $totalScanned += count($files);
             }
         } else {
-            // Otherwise, scan all user folders
-            $userFolders = $this->rootFolder->getDirectoryListing();
+            // Otherwise, scan all users
+            $this->userManager->callForAllUsers(function ($user) use ($triggerSizeBytes, &$largeFiles, &$totalScanned) {
+                try {
+                    $userId = $user->getUID();
+                    $this->logger->debug("Scanning files for user: {$userId}");
 
-            foreach ($userFolders as $userFolder) {
-                if (!$userFolder instanceof Folder) {
-                    continue;
+                    // Get the user's folder
+                    $userFolder = $this->rootFolder->getUserFolder($userId);
+
+                    if ($userFolder instanceof Folder) {
+                        $files = $this->scanFolder($userFolder, $triggerSizeBytes);
+                        $largeFiles = array_merge($largeFiles, $files);
+                        $totalScanned += count($files);
+                        $this->logger->debug("Found " . count($files) . " large files for user {$userId}");
+                    }
+                } catch (\Exception $e) {
+                    $this->logger->warning("Error scanning user {$userId}: {$e->getMessage()}");
                 }
-
-                $userName = $userFolder->getName();
-                $this->logger->debug("Scanning user folder: {$userName}");
-
-                $files = $this->scanFolder($userFolder, $triggerSizeBytes);
-                $largeFiles = array_merge($largeFiles, $files);
-                $totalScanned += count($files);
-            }
+            });
         }
 
         $this->logger->info("Scan complete. Found " . count($largeFiles) . " large media files (scanned {$totalScanned} total items)");

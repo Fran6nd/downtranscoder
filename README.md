@@ -1,5 +1,7 @@
 # DownTranscoder for Nextcloud
 
+# WORK IN PROGRESS
+
 **DownTranscoder** is a Nextcloud app designed to help you manage large media files by automatically identifying and transcoding them to smaller sizes.
 
 ## Features

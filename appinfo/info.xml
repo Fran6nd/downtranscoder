@@ -22,7 +22,7 @@
 
 ⚠️ **Warning**: Automatic deletion is risky — always double-check before enabling it.
     ]]></description>
-    <version>1.4.4</version>
+    <version>1.4.5</version>
     <licence>agpl</licence>
     <author mail="you@example.com" homepage="https://github.com/yourusername">Your Name</author>
     <namespace>DownTranscoder</namespace>
