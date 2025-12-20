@@ -50,21 +50,11 @@ class MediaScannerService {
             'files_found' => 0,
         ]);
 
-        // Clear ALL previous scan results before starting a new scan
-        // This includes found, queued, transcoding, and aborted items
-        // Only keep transcoded and discarded items
-        $totalCleared = 0;
-        $statesToClear = ['found', 'queued', 'transcoding', 'aborted'];
-        foreach ($statesToClear as $state) {
-            $clearedCount = $this->stateService->clearItemsByState($state);
-            $totalCleared += $clearedCount;
-            if ($clearedCount > 0) {
-                $this->logger->info("Cleared {$clearedCount} items in state '{$state}'");
-            }
-        }
-
-        if ($totalCleared > 0) {
-            $this->logger->info("Total cleared: {$totalCleared} items across all states");
+        // Clear ONLY 'found' items before starting a new scan
+        // Keep queued, transcoding, aborted, transcoded, and discarded items
+        $clearedCount = $this->stateService->clearItemsByState('found');
+        if ($clearedCount > 0) {
+            $this->logger->info("Cleared {$clearedCount} items in 'found' state before scan");
         }
 
         $triggerSizeGB = (int) $this->config->getAppValue('downtranscoder', 'trigger_size_gb', '10');

@@ -176,10 +176,21 @@ class MediaStateService {
      * Clear all items with a specific state
      *
      * @param string $state State to clear (e.g., 'found')
+     * @param string|null $userId User ID (null = all users, for background jobs)
      * @return int Number of deleted items
      */
-    public function clearItemsByState(string $state): int {
-        $userId = $this->getUserId();
+    public function clearItemsByState(string $state, ?string $userId = null): int {
+        // If userId is not provided, try to get current user
+        // If no current user (background job), use null to clear for all users
+        if ($userId === null) {
+            try {
+                $userId = $this->getUserId();
+            } catch (\Exception $e) {
+                // No user session (background job context), clear for all users
+                $userId = null;
+            }
+        }
+
         return $this->mapper->deleteByState($userId, $state);
     }
 }
