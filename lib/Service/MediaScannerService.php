@@ -47,18 +47,23 @@ class MediaScannerService {
      * @return array Array of large media files with metadata
      */
     public function scanForLargeFiles(): array {
+        $this->logger->info('>>> scanForLargeFiles() called');
+
         // Set scan status to scanning
         $this->setScanStatus([
             'is_scanning' => true,
             'started_at' => time(),
             'files_found' => 0,
         ]);
+        $this->logger->info('>>> Scan status set to: is_scanning=true');
 
         // Clear ONLY 'found' items before starting a new scan
         // Keep queued, transcoding, aborted, transcoded, and discarded items
-        $clearedCount = $this->stateService->clearItemsByState('found');
-        if ($clearedCount > 0) {
-            $this->logger->info("Cleared {$clearedCount} items in 'found' state before scan");
+        try {
+            $clearedCount = $this->stateService->clearItemsByState('found');
+            $this->logger->info(">>> Cleared {$clearedCount} items in 'found' state before scan");
+        } catch (\Exception $e) {
+            $this->logger->error(">>> Failed to clear 'found' items: " . $e->getMessage());
         }
 
         $triggerSizeGB = (int) $this->config->getAppValue('downtranscoder', 'trigger_size_gb', '10');
@@ -71,7 +76,8 @@ class MediaScannerService {
         // Get include external storages setting
         $includeExternal = $this->config->getAppValue('downtranscoder', 'include_external_storage', 'true') === 'true';
 
-        $this->logger->info("Scanning for media files larger than {$triggerSizeGB} GB");
+        $this->logger->info("=== SCAN STARTING ===");
+        $this->logger->info("Trigger size: {$triggerSizeGB} GB ({$triggerSizeBytes} bytes)");
         if (!empty($scanPaths)) {
             $this->logger->info("Scan paths configured: " . implode(', ', $scanPaths));
         } else {
@@ -92,31 +98,53 @@ class MediaScannerService {
             }
         } else {
             // Otherwise, scan all users
-            $this->userManager->callForAllUsers(function ($user) use ($triggerSizeBytes, &$largeFiles, &$totalScanned) {
-                try {
+            $this->logger->info(">>> No specific scan paths configured - scanning ALL USERS");
+            $userCount = 0;
+
+            try {
+                $this->userManager->callForAllUsers(function ($user) use ($triggerSizeBytes, &$largeFiles, &$totalScanned, &$userCount) {
+                    $userCount++;
                     $userId = $user->getUID();
-                    $this->logger->debug("Scanning files for user: {$userId}");
+                    $this->logger->info(">>> [User #{$userCount}] Processing user: {$userId}");
 
-                    // Get the user's folder
-                    $userFolder = $this->rootFolder->getUserFolder($userId);
+                    try {
+                        // Get the user's folder
+                        $userFolder = $this->rootFolder->getUserFolder($userId);
+                        $folderPath = $userFolder->getPath();
+                        $this->logger->info(">>> [User {$userId}] Got user folder: {$folderPath}");
 
-                    if ($userFolder instanceof Folder) {
-                        $files = $this->scanFolder($userFolder, $triggerSizeBytes);
-                        $largeFiles = array_merge($largeFiles, $files);
-                        $totalScanned += count($files);
-                        $this->logger->debug("Found " . count($files) . " large files for user {$userId}");
+                        if ($userFolder instanceof Folder) {
+                            $this->logger->info(">>> [User {$userId}] Starting folder scan (includeExternal: " . ($includeExternal ? 'YES' : 'NO') . ")...");
+                            $files = $this->scanFolder($userFolder, $triggerSizeBytes, $includeExternal);
+                            $largeFiles = array_merge($largeFiles, $files);
+                            $totalScanned += count($files);
+                            $this->logger->info(">>> [User {$userId}] RESULT: Found " . count($files) . " large files (total so far: " . count($largeFiles) . ")");
+                        } else {
+                            $this->logger->error(">>> [User {$userId}] ERROR: User folder is not a Folder instance!");
+                        }
+                    } catch (\Exception $e) {
+                        $this->logger->error(">>> [User {$userId}] EXCEPTION: " . $e->getMessage());
+                        $this->logger->error(">>> [User {$userId}] Stack trace: " . $e->getTraceAsString());
                     }
-                } catch (\Exception $e) {
-                    $this->logger->warning("Error scanning user {$userId}: {$e->getMessage()}");
-                }
-            });
+                });
+
+                $this->logger->info(">>> Finished scanning {$userCount} total users");
+            } catch (\Exception $e) {
+                $this->logger->error(">>> FATAL ERROR in callForAllUsers: " . $e->getMessage());
+                $this->logger->error(">>> Stack trace: " . $e->getTraceAsString());
+            }
         }
 
         $this->logger->info("Scan complete. Found " . count($largeFiles) . " large media files (scanned {$totalScanned} total items)");
 
         // Persist scanned files to the kanban board database
+        $this->logger->info(">>> Persisting " . count($largeFiles) . " files to database...");
+        $addedCount = 0;
+        $errorCount = 0;
+
         foreach ($largeFiles as $fileInfo) {
             try {
+                $this->logger->debug(">>> Adding to DB: {$fileInfo['name']} (owner: {$fileInfo['owner']})");
                 $this->stateService->addMediaItem(
                     $fileInfo['id'],
                     $fileInfo['name'],
@@ -125,10 +153,15 @@ class MediaScannerService {
                     'found', // Initial state is "found"
                     $fileInfo['owner'] // Pass the file owner for background job context
                 );
+                $addedCount++;
             } catch (\Exception $e) {
-                $this->logger->warning("Could not add media item to database: {$e->getMessage()}");
+                $errorCount++;
+                $this->logger->error(">>> FAILED to add '{$fileInfo['name']}' to database: {$e->getMessage()}");
+                $this->logger->error(">>> Stack trace: " . $e->getTraceAsString());
             }
         }
+
+        $this->logger->info(">>> Database persistence complete: {$addedCount} added, {$errorCount} errors");
 
         // Set scan status to complete
         $this->setScanStatus([
@@ -168,7 +201,7 @@ class MediaScannerService {
                 return [];
             }
 
-            return $this->scanFolder($node, $triggerSizeBytes);
+            return $this->scanFolder($node, $triggerSizeBytes, $includeExternal);
         } catch (\Exception $e) {
             $this->logger->error("Error scanning path {$path}: {$e->getMessage()}");
             return [];
@@ -180,28 +213,43 @@ class MediaScannerService {
      *
      * @param Folder $folder Folder to scan
      * @param int $triggerSizeBytes Minimum file size in bytes
+     * @param bool $includeExternal Include external storage files (default: true)
      * @return array Array of large media files
      */
-    private function scanFolder(Folder $folder, int $triggerSizeBytes): array {
+    private function scanFolder(Folder $folder, int $triggerSizeBytes, bool $includeExternal = true): array {
         $largeFiles = [];
 
         try {
+            // Check if this is external storage
+            $storage = $folder->getStorage();
+            $isExternal = $storage && method_exists($storage, 'isLocal') && !$storage->isLocal();
+
+            if ($isExternal) {
+                $this->logger->info(">>> External storage detected: {$folder->getPath()}");
+                if (!$includeExternal) {
+                    $this->logger->info(">>> Skipping external storage (includeExternal=false)");
+                    return [];
+                }
+            }
+
             $nodes = $folder->getDirectoryListing();
+            $this->logger->debug(">>> Scanning folder {$folder->getPath()}: " . count($nodes) . " items" . ($isExternal ? " [EXTERNAL]" : ""));
 
             foreach ($nodes as $node) {
                 if ($node instanceof Folder) {
                     // Recursively scan subfolders
-                    $largeFiles = array_merge($largeFiles, $this->scanFolder($node, $triggerSizeBytes));
+                    $largeFiles = array_merge($largeFiles, $this->scanFolder($node, $triggerSizeBytes, $includeExternal));
                 } elseif ($node instanceof File) {
                     // Check if it's a media file and exceeds size threshold
                     $fileInfo = $this->analyzeFile($node, $triggerSizeBytes);
                     if ($fileInfo !== null) {
                         $largeFiles[] = $fileInfo;
+                        $this->logger->info(">>> Found large file: {$fileInfo['name']} ({$fileInfo['sizeGB']} GB)" . ($isExternal ? " [EXTERNAL]" : ""));
                     }
                 }
             }
         } catch (\Exception $e) {
-            $this->logger->warning("Error scanning folder {$folder->getPath()}: {$e->getMessage()}");
+            $this->logger->error(">>> Error scanning folder {$folder->getPath()}: {$e->getMessage()}", ['exception' => $e]);
         }
 
         return $largeFiles;
@@ -216,14 +264,20 @@ class MediaScannerService {
      */
     private function analyzeFile(File $file, int $triggerSizeBytes): ?array {
         try {
+            $fileName = $file->getName();
             $size = $file->getSize();
+            $sizeGB = $size / (1024 * 1024 * 1024);
 
             // Skip if below threshold
             if ($size <= $triggerSizeBytes) {
+                // Only log files close to threshold for debugging
+                if ($size > $triggerSizeBytes * 0.8) {
+                    $this->logger->debug(">>> File '{$fileName}' is {$sizeGB} GB - below threshold");
+                }
                 return null;
             }
 
-            $extension = strtolower(pathinfo($file->getName(), PATHINFO_EXTENSION));
+            $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
 
             // Determine media type
             $mediaType = null;
@@ -233,27 +287,35 @@ class MediaScannerService {
                 $mediaType = 'Image';
             } else {
                 // Not a media file we care about
+                $this->logger->debug(">>> File '{$fileName}' is {$sizeGB} GB but extension '{$extension}' is not a supported media type");
                 return null;
             }
 
-            $sizeGB = $size / (1024 * 1024 * 1024);
+            $this->logger->info(">>> ✓ MATCH: {$mediaType} file '{$fileName}' ({$sizeGB} GB) - ADDING TO RESULTS");
 
-            $this->logger->debug("Found large {$mediaType}: {$file->getName()} ({$sizeGB} GB)");
+            try {
+                $owner = $file->getOwner();
+                $ownerId = $owner ? $owner->getUID() : 'unknown';
+            } catch (\Exception $e) {
+                $this->logger->warning(">>> Could not get owner for file '{$fileName}': " . $e->getMessage());
+                $ownerId = 'unknown';
+            }
 
             return [
                 'id' => $file->getId(),
-                'name' => $file->getName(),
+                'name' => $fileName,
                 'path' => $file->getPath(),
                 'size' => $size,
                 'sizeGB' => round($sizeGB, 2),
                 'type' => $mediaType,
                 'extension' => $extension,
                 'mimetype' => $file->getMimeType(),
-                'owner' => $file->getOwner()->getUID(),
+                'owner' => $ownerId,
                 'mtime' => $file->getMTime(),
             ];
         } catch (\Exception $e) {
-            $this->logger->warning("Error analyzing file {$file->getName()}: {$e->getMessage()}");
+            $this->logger->error(">>> ERROR analyzing file: " . $e->getMessage());
+            $this->logger->error(">>> Stack trace: " . $e->getTraceAsString());
             return null;
         }
     }

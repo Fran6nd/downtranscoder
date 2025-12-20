@@ -29,13 +29,22 @@ class ScanJob extends QueuedJob {
      * @param mixed $argument
      */
     protected function run($argument): void {
-        $this->logger->info('DownTranscoder scan job started');
+        $this->logger->info('=================================');
+        $this->logger->info('DownTranscoder SCAN JOB STARTED');
+        $this->logger->info('=================================');
 
         try {
             $files = $this->scannerService->scanForLargeFiles();
-            $this->logger->info('Scan job completed successfully. Found ' . count($files) . ' files');
+            $this->logger->info('=================================');
+            $this->logger->info('SCAN JOB COMPLETED SUCCESSFULLY');
+            $this->logger->info('Total files found: ' . count($files));
+            $this->logger->info('=================================');
         } catch (\Exception $e) {
-            $this->logger->error('Scan job failed: ' . $e->getMessage(), [
+            $this->logger->error('=================================');
+            $this->logger->error('SCAN JOB FAILED');
+            $this->logger->error('Error: ' . $e->getMessage());
+            $this->logger->error('Stack trace: ' . $e->getTraceAsString());
+            $this->logger->error('=================================', [
                 'exception' => $e
             ]);
         }
