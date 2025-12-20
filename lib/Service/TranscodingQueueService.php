@@ -140,11 +140,15 @@ class TranscodingQueueService {
             return false;
         }
 
-        // Update state to 'transcoding' in the database by fileId
+        // Get media item to access preset
+        $mediaItemData = null;
+        $preset = null;
         try {
             $mediaItem = $this->stateService->getMediaItemsByState('queued');
             foreach ($mediaItem as $item) {
                 if ($item['fileId'] === $fileId) {
+                    $mediaItemData = $item;
+                    $preset = $item['transcodePreset'] ?? null;
                     $this->stateService->updateMediaState($item['id'], 'transcoding');
                     break;
                 }
@@ -164,7 +168,8 @@ class TranscodingQueueService {
         // Create output path
         $outputPath = $inputPath . '.transcoded.' . $extension;
 
-        $this->logger->info("Transcoding file {$fileId}: {$inputPath} -> {$outputPath}");
+        $presetInfo = $preset ? " with preset '{$preset}'" : " with default settings";
+        $this->logger->info("Transcoding file {$fileId}{$presetInfo}: {$inputPath} -> {$outputPath}");
 
         // Determine if it's a video or image
         $isVideo = in_array($extension, ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'flv', 'webm', 'm4v', 'mpg', 'mpeg', 'ts', 'vob']);
@@ -173,7 +178,7 @@ class TranscodingQueueService {
         $success = false;
 
         if ($isVideo) {
-            $success = $this->transcodingService->transcodeVideo($inputPath, $outputPath);
+            $success = $this->transcodingService->transcodeVideo($inputPath, $outputPath, $preset);
         } elseif ($isImage) {
             $success = $this->transcodingService->compressImage($inputPath, $outputPath);
         }

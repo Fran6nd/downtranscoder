@@ -83,22 +83,15 @@ class TranscodeJob extends TimedJob {
             return;
         }
 
-        $queue = $this->queueService->getQueue();
+        // Check for queued items in the database
+        $queuedCount = $status['queued_items'] ?? 0;
 
-        if (empty($queue)) {
-            $this->logger->debug('Transcode queue is empty, nothing to do');
+        if ($queuedCount === 0) {
+            $this->logger->debug('No queued items to transcode');
             return;
         }
 
-        // Count pending items
-        $pendingItems = array_filter($queue, fn($item) => ($item['status'] ?? 'pending') === 'pending');
-
-        if (empty($pendingItems)) {
-            $this->logger->info('No pending items in queue');
-            return;
-        }
-
-        $this->logger->info(sprintf('Starting background transcoding of %d pending items', count($pendingItems)));
+        $this->logger->info(sprintf('Starting background transcoding of %d queued items', $queuedCount));
 
         try {
             $this->queueService->startTranscoding();

@@ -138,10 +138,12 @@ style('downtranscoder', 'admin');
 
         <button id="save-settings" class="button primary"><?php p($l->t('Save Settings')); ?></button>
 
-        <div id="downtranscoder-scan-section" style="margin-top: 40px;">
-            <h3><?php p($l->t('Scan & Review')); ?></h3>
-            <button id="scan-files" class="button"><?php p($l->t('Scan for Large Files')); ?></button>
-            <div id="scan-results" style="margin-top: 20px;"></div>
+        <div style="margin-top: 40px;">
+            <h3><?php p($l->t('Manage Media')); ?></h3>
+            <p><?php p($l->t('Use the main DownTranscoder page to scan for media, manage the transcoding workflow, and view progress.')); ?></p>
+            <a href="<?php p(\OC::$server->getURLGenerator()->linkToRoute('downtranscoder.page.index')); ?>" class="button">
+                <?php p($l->t('Go to DownTranscoder')); ?>
+            </a>
         </div>
     </div>
 </div>

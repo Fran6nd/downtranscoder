@@ -5,25 +5,30 @@ declare(strict_types=1);
 namespace OCA\DownTranscoder\Command;
 
 use OCA\DownTranscoder\Service\TranscodingQueueService;
+use OCA\DownTranscoder\Service\MediaStateService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Helper\Table;
 
 class TranscodeCommand extends Command {
     private TranscodingQueueService $queueService;
+    private MediaStateService $stateService;
 
-    public function __construct(TranscodingQueueService $queueService) {
+    public function __construct(
+        TranscodingQueueService $queueService,
+        MediaStateService $stateService
+    ) {
         parent::__construct();
         $this->queueService = $queueService;
+        $this->stateService = $stateService;
     }
 
     protected function configure(): void {
         $this
             ->setName('downtranscoder:transcode')
-            ->setDescription('Manage and process the transcoding queue')
+            ->setDescription('Manage and process the transcoding workflow')
             ->addOption(
                 'start',
                 's',
@@ -34,47 +39,25 @@ class TranscodeCommand extends Command {
                 'list',
                 'l',
                 InputOption::VALUE_NONE,
-                'List all files in the transcode queue'
+                'List all media items by state'
             )
             ->addOption(
                 'status',
                 null,
                 InputOption::VALUE_NONE,
                 'Show transcoding status'
-            )
-            ->addOption(
-                'add',
-                'a',
-                InputOption::VALUE_REQUIRED,
-                'Add a file to the queue by file ID'
-            )
-            ->addOption(
-                'remove',
-                'r',
-                InputOption::VALUE_REQUIRED,
-                'Remove a file from the queue by file ID'
             );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int {
-        // List queue
+        // List media items
         if ($input->getOption('list')) {
-            return $this->listQueue($output);
+            return $this->listMediaItems($output);
         }
 
         // Show status
         if ($input->getOption('status')) {
             return $this->showStatus($output);
-        }
-
-        // Add to queue
-        if ($fileId = $input->getOption('add')) {
-            return $this->addToQueue((int)$fileId, $output);
-        }
-
-        // Remove from queue
-        if ($fileId = $input->getOption('remove')) {
-            return $this->removeFromQueue((int)$fileId, $output);
         }
 
         // Start transcoding
@@ -87,31 +70,32 @@ class TranscodeCommand extends Command {
         return Command::INVALID;
     }
 
-    private function listQueue(OutputInterface $output): int {
-        $queue = $this->queueService->getQueue();
+    private function listMediaItems(OutputInterface $output): int {
+        $allItems = $this->stateService->getAllMediaItems();
 
-        if (empty($queue)) {
-            $output->writeln('<comment>Transcode queue is empty.</comment>');
+        if (empty($allItems)) {
+            $output->writeln('<comment>No media items found.</comment>');
             return Command::SUCCESS;
         }
 
-        $output->writeln(sprintf('<info>Transcode Queue (%d items):</info>', count($queue)));
+        $output->writeln(sprintf('<info>Media Items (%d total):</info>', count($allItems)));
         $output->writeln('');
 
         $table = new Table($output);
-        $table->setHeaders(['ID', 'Name', 'Size (GB)', 'Status', 'Added']);
+        $table->setHeaders(['ID', 'Name', 'Size (GB)', 'State', 'Preset', 'Updated']);
 
-        foreach ($queue as $item) {
+        foreach ($allItems as $item) {
             $sizeGB = $item['size'] / (1024 * 1024 * 1024);
-            $addedAt = date('Y-m-d H:i:s', $item['added_at']);
-            $status = $item['status'] ?? 'pending';
+            $updatedAt = date('Y-m-d H:i:s', $item['updatedAt']);
+            $preset = $item['transcodePreset'] ?? 'default';
 
             $table->addRow([
                 $item['id'],
                 $item['name'],
                 number_format($sizeGB, 2),
-                $status,
-                $addedAt
+                $item['state'],
+                $preset,
+                $updatedAt
             ]);
         }
 
@@ -138,45 +122,27 @@ class TranscodeCommand extends Command {
             $output->writeln(sprintf('  Current file: %s', $currentFile));
         }
 
-        $output->writeln(sprintf('  Queued items: %d', $status['queued_items'] ?? 0));
-        $output->writeln(sprintf('  Completed: %d', $status['completed_items'] ?? 0));
-        $output->writeln(sprintf('  Failed: %d', $status['failed_items'] ?? 0));
-
-        return Command::SUCCESS;
-    }
-
-    private function addToQueue(int $fileId, OutputInterface $output): int {
-        $output->writeln(sprintf('<info>Adding file %d to queue...</info>', $fileId));
-
-        $success = $this->queueService->addToQueue($fileId);
-
-        if ($success) {
-            $output->writeln('<info>File added to queue successfully.</info>');
-            return Command::SUCCESS;
-        } else {
-            $output->writeln('<error>Failed to add file to queue.</error>');
-            return Command::FAILURE;
-        }
-    }
-
-    private function removeFromQueue(int $fileId, OutputInterface $output): int {
-        $output->writeln(sprintf('<info>Removing file %d from queue...</info>', $fileId));
-
-        $this->queueService->removeFromQueue($fileId);
-        $output->writeln('<info>File removed from queue.</info>');
+        $output->writeln('');
+        $output->writeln('<info>Media Items by State:</info>');
+        $output->writeln(sprintf('  Found: %d', count($this->stateService->getMediaItemsByState('found'))));
+        $output->writeln(sprintf('  Queued: %d', $status['queued_items'] ?? 0));
+        $output->writeln(sprintf('  Transcoding: %d', $status['transcoding_items'] ?? 0));
+        $output->writeln(sprintf('  Transcoded: %d', $status['transcoded_items'] ?? 0));
+        $output->writeln(sprintf('  Aborted: %d', $status['aborted_items'] ?? 0));
+        $output->writeln(sprintf('  Discarded: %d', count($this->stateService->getMediaItemsByState('discarded'))));
 
         return Command::SUCCESS;
     }
 
     private function startTranscoding(OutputInterface $output): int {
-        $queue = $this->queueService->getQueue();
+        $queuedItems = $this->stateService->getMediaItemsByState('queued');
 
-        if (empty($queue)) {
-            $output->writeln('<comment>Transcode queue is empty. Nothing to transcode.</comment>');
+        if (empty($queuedItems)) {
+            $output->writeln('<comment>No queued items. Nothing to transcode.</comment>');
             return Command::SUCCESS;
         }
 
-        $output->writeln(sprintf('<info>Starting transcoding of %d files...</info>', count($queue)));
+        $output->writeln(sprintf('<info>Starting transcoding of %d queued files...</info>', count($queuedItems)));
         $output->writeln('');
 
         $success = $this->queueService->startTranscoding();

@@ -24,9 +24,10 @@ class TranscodingService {
      *
      * @param string $inputPath Input file path
      * @param string $outputPath Output file path
+     * @param string|null $preset Optional preset (e.g., 'h265_crf23', 'h264_crf23')
      * @return bool Success
      */
-    public function transcodeVideo(string $inputPath, string $outputPath): bool {
+    public function transcodeVideo(string $inputPath, string $outputPath, ?string $preset = null): bool {
         if (!file_exists($inputPath)) {
             $this->logger->error("Input file not found: {$inputPath}");
             return false;
@@ -38,8 +39,9 @@ class TranscodingService {
             return false;
         }
 
-        $videoCodec = $this->config->getAppValue('downtranscoder', 'video_codec', 'H265');
-        $videoCRF = $this->config->getAppValue('downtranscoder', 'video_crf', '23');
+        // Parse preset or use config defaults
+        [$videoCodec, $videoCRF] = $this->parsePreset($preset);
+
         $maxWidth = (int) $this->config->getAppValue('downtranscoder', 'max_video_width', '3840');
         $maxHeight = (int) $this->config->getAppValue('downtranscoder', 'max_video_height', '2160');
 
@@ -187,6 +189,40 @@ class TranscodingService {
         $returnCode = 0;
         exec('ffmpeg -version 2>&1', $output, $returnCode);
         return $returnCode === 0;
+    }
+
+    /**
+     * Parse preset string into codec and CRF values
+     *
+     * @param string|null $preset Preset name (e.g., 'h265_crf23', 'h264_crf23')
+     * @return array [codec, crf]
+     */
+    private function parsePreset(?string $preset): array {
+        if ($preset === null || $preset === '') {
+            // Use config defaults
+            $videoCodec = $this->config->getAppValue('downtranscoder', 'video_codec', 'H265');
+            $videoCRF = $this->config->getAppValue('downtranscoder', 'video_crf', '26');
+            return [$videoCodec, $videoCRF];
+        }
+
+        // Parse preset format: codec_crfXX
+        // Examples: h265_crf23, h265_crf26, h265_crf28, h264_crf23
+        $presetMap = [
+            'h265_crf23' => ['H265', '23'],
+            'h265_crf26' => ['H265', '26'],
+            'h265_crf28' => ['H265', '28'],
+            'h264_crf23' => ['H264', '23'],
+        ];
+
+        if (isset($presetMap[$preset])) {
+            return $presetMap[$preset];
+        }
+
+        // Fallback to config defaults if preset is invalid
+        $this->logger->warning("Unknown preset '{$preset}', using config defaults");
+        $videoCodec = $this->config->getAppValue('downtranscoder', 'video_codec', 'H265');
+        $videoCRF = $this->config->getAppValue('downtranscoder', 'video_crf', '26');
+        return [$videoCodec, $videoCRF];
     }
 
     /**
