@@ -146,4 +146,19 @@ class MediaItemMapper extends QBMapper {
 
         return $qb->executeStatement();
     }
+
+    /**
+     * Delete all items for a user (reset database)
+     *
+     * @param string $userId
+     * @return int Number of deleted items
+     */
+    public function deleteAllForUser(string $userId): int {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->delete($this->getTableName())
+            ->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)));
+
+        return $qb->executeStatement();
+    }
 }

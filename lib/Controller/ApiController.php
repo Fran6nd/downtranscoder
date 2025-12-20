@@ -264,4 +264,26 @@ class ApiController extends Controller {
             );
         }
     }
+
+    /**
+     * Reset the database - clears all media items
+     *
+     * @NoAdminRequired
+     */
+    public function resetDatabase(): JSONResponse {
+        try {
+            $clearedCount = $this->stateService->resetAllData();
+            $this->logger->info("Database reset: cleared {$clearedCount} media items");
+            return new JSONResponse([
+                'success' => true,
+                'message' => "Database reset successfully. Cleared {$clearedCount} items."
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Error resetting database: ' . $e->getMessage());
+            return new JSONResponse(
+                ['error' => $e->getMessage()],
+                Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
 }

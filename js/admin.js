@@ -3,6 +3,7 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         const saveButton = document.getElementById('save-settings');
+        const resetButton = document.getElementById('reset-database');
 
         // Save settings
         if (saveButton) {
@@ -41,6 +42,43 @@
                 });
 
                 OC.Notification.showTemporary(t('downtranscoder', 'Settings saved'));
+            });
+        }
+
+        // Reset database
+        if (resetButton) {
+            resetButton.addEventListener('click', function() {
+                if (!confirm(t('downtranscoder', 'Are you sure you want to reset the database? This will clear all media items. This action cannot be undone!'))) {
+                    return;
+                }
+
+                resetButton.disabled = true;
+                resetButton.textContent = t('downtranscoder', 'Resetting...');
+
+                const url = OC.generateUrl('/apps/downtranscoder/api/reset-database');
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'requesttoken': OC.requestToken
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        OC.Notification.showTemporary(data.message || t('downtranscoder', 'Database reset successfully'));
+                    } else {
+                        OC.Notification.showTemporary(t('downtranscoder', 'Error: ') + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Reset error:', error);
+                    OC.Notification.showTemporary(t('downtranscoder', 'Failed to reset database'));
+                })
+                .finally(() => {
+                    resetButton.disabled = false;
+                    resetButton.textContent = t('downtranscoder', '🗑️ Reset Database');
+                });
             });
         }
     });

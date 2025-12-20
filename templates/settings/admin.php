@@ -136,6 +136,16 @@ style('downtranscoder', 'admin');
             </em>
         </p>
 
+        <p style="margin-top: 20px;">
+            <button id="reset-database" class="button" style="background-color: #d9534f; color: white;">
+                <?php p($l->t('🗑️ Reset Database')); ?>
+            </button>
+            <br>
+            <em style="color: #f00;">
+                <?php p($l->t('WARNING: This will clear all media items from the database. Use this if you have database migration issues or want to start fresh.')); ?>
+            </em>
+        </p>
+
         <button id="save-settings" class="button primary"><?php p($l->t('Save Settings')); ?></button>
 
         <div style="margin-top: 40px;">

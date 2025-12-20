@@ -193,4 +193,14 @@ class MediaStateService {
 
         return $this->mapper->deleteByState($userId, $state);
     }
+
+    /**
+     * Reset all data - clears all media items for the current user
+     *
+     * @return int Number of deleted items
+     */
+    public function resetAllData(): int {
+        $userId = $this->getUserId();
+        return $this->mapper->deleteAllForUser($userId);
+    }
 }
