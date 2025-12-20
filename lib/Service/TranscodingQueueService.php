@@ -173,14 +173,58 @@ class TranscodingQueueService {
             return false;
         }
 
-        // Verify file actually exists on disk
-        if (!file_exists($inputPath)) {
-            $errorReason = "File does not exist on disk: {$inputPath}. The file may have been moved, deleted, or is on unmounted storage.";
-            $this->logger->error("File {$fileId} not accessible: {$errorReason}");
+        // Debug logging for external storage issues
+        $this->logger->debug("File {$fileId} path resolution: getLocalFile()={$inputPath}, getPath()={$file->getPath()}, getInternalPath()={$file->getInternalPath()}");
 
-            // Update state to 'aborted' with reason
-            $this->updateMediaStateToAborted($fileId, $errorReason);
-            return false;
+        // Verify file actually exists on disk and is readable
+        $fileAccessible = file_exists($inputPath) && is_readable($inputPath);
+        $usingTempFile = false;
+
+        if (!$fileAccessible) {
+            // For external storage, the path might not be accessible directly by PHP
+            // Try to use Nextcloud's file stream wrapper as a workaround
+            $this->logger->warning("Direct file access failed for {$inputPath}. Attempting Nextcloud stream wrapper for external storage...");
+
+            try {
+                // Create a temporary file and copy content using Nextcloud's file abstraction with streaming
+                $tempPath = sys_get_temp_dir() . '/nextcloud_transcode_' . $fileId . '.' . $extension;
+
+                // Use Nextcloud's fopen to get a stream (more memory efficient for large files)
+                $sourceStream = $file->fopen('r');
+                if ($sourceStream === false) {
+                    throw new \Exception("Failed to open file stream via Nextcloud");
+                }
+
+                $destStream = fopen($tempPath, 'w');
+                if ($destStream === false) {
+                    fclose($sourceStream);
+                    throw new \Exception("Failed to create temporary file");
+                }
+
+                // Stream copy (memory efficient)
+                $copied = stream_copy_to_stream($sourceStream, $destStream);
+                fclose($sourceStream);
+                fclose($destStream);
+
+                if ($copied === false) {
+                    throw new \Exception("Failed to copy file content");
+                }
+
+                $this->logger->info("Created temporary file for transcoding: {$tempPath} ({$copied} bytes copied)");
+                $inputPath = $tempPath;
+                $fileAccessible = true;
+                $usingTempFile = true;
+            } catch (\Exception $e) {
+                $storage = $file->getStorage();
+                $storageId = $storage->getId();
+
+                $errorReason = "Cannot access file for transcoding. Direct path '{$inputPath}' not accessible and fallback failed: {$e->getMessage()}. Storage ID: {$storageId}. Please check: 1) External storage is mounted in Nextcloud, 2) PHP has permission to access external storage, 3) File hasn't been moved/renamed.";
+                $this->logger->error("File {$fileId} not accessible: {$errorReason}");
+
+                // Update state to 'aborted' with reason
+                $this->updateMediaStateToAborted($fileId, $errorReason);
+                return false;
+            }
         }
 
         // Create output path
@@ -233,6 +277,12 @@ class TranscodingQueueService {
 
             // Update state to 'aborted' with reason
             $this->updateMediaStateToAborted($fileId, $errorReason);
+        }
+
+        // Clean up temporary file if we created one for external storage
+        if ($usingTempFile && file_exists($inputPath)) {
+            $this->logger->debug("Cleaning up temporary file: {$inputPath}");
+            unlink($inputPath);
         }
 
         return $success;
