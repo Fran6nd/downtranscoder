@@ -120,6 +120,10 @@ Use the Kanban Board interface for manual, on-demand transcoding:
 
 1. Click **DownTranscoder** in the Nextcloud navigation menu
 2. Click **"Scan Media"** to find large files
+   - **Scanning runs in the background** - you can continue using the app while scanning
+   - The button shows "Scanning..." with a loading spinner during the scan
+   - You'll get a notification when the scan completes with the number of files found
+   - Scan status is checked every 5 seconds to update the UI automatically
 3. **Drag and drop** files between columns:
    - Move files to **"To Transcode"** to queue them
    - Click **"Start Transcoding"** to begin processing **one file at a time**
