@@ -269,9 +269,12 @@
 		var btn = document.getElementById('btn-scan');
 		var self = this;
 
-		// Queue the scan job
+		console.log('DownTranscoder: triggerScan called');
+
+		// Trigger immediate background scan
 		this.ajax('GET', OC.generateUrl('/apps/downtranscoder/api/v1/scan'))
 			.then(function(response) {
+				console.log('DownTranscoder: Scan response:', response);
 				if (response.success) {
 					self.isScanning = true;
 					btn.disabled = true;
@@ -282,8 +285,10 @@
 				}
 			})
 			.catch(function(error) {
-				console.error('Error starting scan:', error);
-				OC.Notification.showTemporary('Failed to start scan', { type: 'error' });
+				console.error('DownTranscoder: Error starting scan:', error);
+				btn.disabled = false;
+				btn.innerHTML = '<span class="icon-category-office"></span> Scan Media';
+				OC.Notification.showTemporary('Failed to start scan: ' + error, { type: 'error' });
 			});
 	};
 

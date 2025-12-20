@@ -40,16 +40,21 @@ class ApiController extends Controller {
     }
 
     /**
-     * Queue a background scan job
+     * Trigger an immediate background scan
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
     public function scan(): JSONResponse {
         try {
+            $this->logger->info('=== API SCAN ENDPOINT CALLED ===');
+
             // Check if a scan is already running
             $status = $this->scannerService->getScanStatus();
+            $this->logger->info('Current scan status: ' . json_encode($status));
+
             if ($status['is_scanning'] ?? false) {
+                $this->logger->warning('Scan already in progress - rejecting new scan request');
                 return new JSONResponse([
                     'success' => false,
                     'message' => 'A scan is already in progress',
@@ -57,16 +62,47 @@ class ApiController extends Controller {
                 ]);
             }
 
-            // Queue the scan job to run in the background
-            $this->jobList->add(ScanJob::class);
-            $this->logger->info('Scan job queued successfully');
+            // RUN SCAN IMMEDIATELY in background using exec
+            $this->logger->info('Starting IMMEDIATE background scan...');
 
-            return new JSONResponse([
-                'success' => true,
-                'message' => 'Scan job queued successfully'
-            ]);
+            try {
+                // Trigger the scan to run asynchronously in background
+                $job = new ScanJob(
+                    \OC::$server->get(\OCP\AppFramework\Utility\ITimeFactory::class),
+                    $this->scannerService,
+                    $this->logger
+                );
+
+                // Execute the job in a separate background process
+                $this->logger->info('Executing scan job in background...');
+
+                // Use a background process to run the scan
+                if (function_exists('exec')) {
+                    $command = sprintf(
+                        'php %s/occ downtranscoder:scan > /dev/null 2>&1 &',
+                        escapeshellarg(\OC::$SERVERROOT)
+                    );
+                    $this->logger->info('Executing background command: ' . $command);
+                    exec($command);
+                    $this->logger->info('Background scan command executed');
+                } else {
+                    // Fallback: run in current process (will block)
+                    $this->logger->warning('exec() not available, running scan synchronously');
+                    $job->execute($this->jobList);
+                }
+
+                return new JSONResponse([
+                    'success' => true,
+                    'message' => 'Scan started in background'
+                ]);
+            } catch (\Exception $e) {
+                $this->logger->error('Failed to start background scan: ' . $e->getMessage());
+                $this->logger->error('Stack trace: ' . $e->getTraceAsString());
+                throw $e;
+            }
         } catch (\Exception $e) {
-            $this->logger->error('Failed to queue scan job: ' . $e->getMessage());
+            $this->logger->error('FAILED to start scan: ' . $e->getMessage());
+            $this->logger->error('Stack trace: ' . $e->getTraceAsString());
             return new JSONResponse(
                 ['error' => $e->getMessage()],
                 Http::STATUS_INTERNAL_SERVER_ERROR
