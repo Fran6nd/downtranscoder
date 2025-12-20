@@ -49,20 +49,27 @@ class TranscodingQueueService {
             return true;
         }
 
+        // Get concurrent limit from settings (default: 1)
+        $concurrentLimit = (int)$this->config->getAppValue('downtranscoder', 'concurrent_limit', '1');
+        $concurrentLimit = max(1, min(10, $concurrentLimit)); // Clamp between 1 and 10
+
+        // Limit items to process based on concurrent limit
+        $itemsToProcess = array_slice($queuedItems, 0, $concurrentLimit);
+
         $this->setStatus([
             'is_transcoding' => true,
             'current_index' => 0,
-            'total_items' => count($queuedItems),
+            'total_items' => count($itemsToProcess),
             'started_at' => time(),
         ]);
 
-        $this->logger->info("Starting transcoding of " . count($queuedItems) . " items");
+        $this->logger->info("Starting transcoding of " . count($itemsToProcess) . " items (concurrent limit: {$concurrentLimit})");
 
-        foreach ($queuedItems as $index => $item) {
+        foreach ($itemsToProcess as $index => $item) {
             $this->setStatus([
                 'is_transcoding' => true,
                 'current_index' => $index + 1,
-                'total_items' => count($queuedItems),
+                'total_items' => count($itemsToProcess),
                 'current_file' => $item['name'],
             ]);
 

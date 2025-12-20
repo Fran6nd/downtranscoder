@@ -32,7 +32,10 @@
                     image_quality: document.getElementById('image-quality').value,
                     max_image_width: document.getElementById('max-image-width').value,
                     max_image_height: document.getElementById('max-image-height').value,
-                    auto_delete_originals: document.getElementById('auto-delete-originals').checked ? 'true' : 'false'
+                    auto_delete_originals: document.getElementById('auto-delete-originals').checked ? 'true' : 'false',
+                    concurrent_limit: document.getElementById('concurrent-limit').value,
+                    enable_schedule: document.getElementById('enable-schedule').checked ? 'true' : 'false',
+                    schedule_start: document.getElementById('schedule-start').value
                 };
 
                 Object.keys(settings).forEach(function(key) {

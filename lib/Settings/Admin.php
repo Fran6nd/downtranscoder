@@ -31,6 +31,9 @@ class Admin implements ISettings {
             'max_image_width' => $this->config->getAppValue('downtranscoder', 'max_image_width', '1920'),
             'max_image_height' => $this->config->getAppValue('downtranscoder', 'max_image_height', '1080'),
             'auto_delete_originals' => $this->config->getAppValue('downtranscoder', 'auto_delete_originals', 'false'),
+            'concurrent_limit' => $this->config->getAppValue('downtranscoder', 'concurrent_limit', '1'),
+            'enable_schedule' => $this->config->getAppValue('downtranscoder', 'enable_schedule', 'false'),
+            'schedule_start' => $this->config->getAppValue('downtranscoder', 'schedule_start', '02:00'),
         ];
 
         return new TemplateResponse('downtranscoder', 'settings/admin', $parameters);

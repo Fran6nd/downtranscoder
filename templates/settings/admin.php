@@ -94,6 +94,34 @@ style('downtranscoder', 'admin');
             <em><?php p($l->t('0 = no limit')); ?></em>
         </p>
 
+        <h3><?php p($l->t('Transcoding Queue Settings')); ?></h3>
+
+        <p>
+            <label for="concurrent-limit"><?php p($l->t('Concurrent Transcoding Limit')); ?></label>
+            <input type="number" id="concurrent-limit" name="concurrent_limit"
+                   value="<?php p($_['concurrent_limit']); ?>" min="1" max="10" />
+            <em><?php p($l->t('Maximum number of files to transcode simultaneously in scheduled tasks (Default: 1)')); ?></em>
+        </p>
+
+        <h3><?php p($l->t('Schedule Settings')); ?></h3>
+
+        <p>
+            <input type="checkbox" id="enable-schedule" name="enable_schedule"
+                   class="checkbox" <?php if ($_['enable_schedule'] === 'true') p('checked'); ?> />
+            <label for="enable-schedule">
+                <?php p($l->t('Enable Scheduled Transcoding')); ?>
+            </label>
+            <br>
+            <em><?php p($l->t('When enabled, automatic transcoding will only run at the specified time')); ?></em>
+        </p>
+
+        <p>
+            <label for="schedule-start"><?php p($l->t('Scheduled Time')); ?></label>
+            <input type="time" id="schedule-start" name="schedule_start"
+                   value="<?php p($_['schedule_start']); ?>" />
+            <em><?php p($l->t('Time to start transcoding (processes concurrent limit items then stops until next day)')); ?></em>
+        </p>
+
         <h3><?php p($l->t('Danger Zone')); ?></h3>
 
         <p>

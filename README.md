@@ -74,6 +74,9 @@ That's it! No build step needed.
    - **Video CRF**: 23-28 recommended (higher = smaller file, lower quality)
    - **Image Quality**: JPEG quality (1-100, higher = better quality)
    - **Max Image Dimensions**: Optional resize limits
+   - **Concurrent Transcoding Limit**: Maximum number of files to process per scheduled run (1-10, default: 1)
+   - **Enable Scheduled Transcoding**: When enabled, automatic transcoding only runs at the specified time
+   - **Scheduled Time**: Daily time to start transcoding (e.g., 02:00)
    - **Auto-Delete Originals**: ⚠️ Use with extreme caution
 
 ### Recommended FFmpeg Settings for Size Reduction
@@ -111,17 +114,42 @@ The app automatically uses these settings and naming conventions.
 
 ## Usage
 
-### Via Kanban Board (Main Interface)
+### Manual Transcoding Workflow
+
+Use the Kanban Board interface for manual, on-demand transcoding:
 
 1. Click **DownTranscoder** in the Nextcloud navigation menu
 2. Click **"Scan Media"** to find large files
 3. **Drag and drop** files between columns:
    - Move files to **"To Transcode"** to queue them
-   - Click **"Start Transcoding"** to begin processing
+   - Click **"Start Transcoding"** to begin processing **one file at a time**
    - Files automatically move to **"Transcoded"** when complete
    - Delete originals by clicking the delete button
    - Move unwanted files to **"Discard"**
 4. All changes are automatically saved and persist across sessions
+
+**Manual transcoding** processes **one file at a time** and can be triggered anytime by clicking the "Start Transcoding" button.
+
+### Scheduled Automatic Transcoding Workflow
+
+Configure automatic transcoding to run at specific times:
+
+1. Go to **Settings** → **Administration** → **DownTranscoder**
+2. Enable **"Enable Scheduled Transcoding"** checkbox
+3. Set **"Scheduled Time"** (e.g., 02:00 for 2 AM)
+4. Set **"Concurrent Transcoding Limit"** (e.g., 3 to process 3 files per run)
+5. Save settings
+
+**How it works:**
+- Background job runs every hour but only transcodes at the scheduled time
+- At the scheduled time (e.g., 2 AM), it processes N files from the "To Transcode" queue (where N = concurrent limit)
+- Processes the files, then stops until the next day at the same time
+- Runs once per day at the scheduled time
+
+**Example:**
+- Scheduled Time: `02:00`
+- Concurrent Limit: `3`
+- Result: Every day at 2 AM, 3 files are transcoded, then the system waits until 2 AM the next day
 
 See [USAGE.md](USAGE.md) for detailed usage instructions and troubleshooting.
 
@@ -165,7 +193,21 @@ curl -X GET https://your-nextcloud.com/apps/downtranscoder/api/v1/transcode/stat
 
 ## Background Jobs
 
-The app registers a background job that runs periodically to process the transcode queue. You can configure Nextcloud's cron settings to control how often background jobs run.
+The app registers a background job that runs **every hour** to check for transcoding work.
+
+### Scheduling Behavior
+
+**When scheduling is DISABLED (default):**
+- Background job processes queued items every hour
+- Processes up to N items per run (where N = concurrent limit, default: 1)
+
+**When scheduling is ENABLED:**
+- Background job runs every hour but only transcodes at the scheduled time
+- At the scheduled time, processes N items from the queue (where N = concurrent limit)
+- Runs once per day, then waits until the next scheduled time
+- Uses a tracker to prevent duplicate runs within the same hour
+
+You can configure Nextcloud's cron settings to control how often background jobs run.
 
 ## ⚠️ Warnings
 
