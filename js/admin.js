@@ -55,7 +55,7 @@
                 resetButton.disabled = true;
                 resetButton.textContent = t('downtranscoder', 'Resetting...');
 
-                const url = OC.generateUrl('/apps/downtranscoder/api/reset-database');
+                const url = OC.generateUrl('/apps/downtranscoder/api/v1/reset-database');
                 fetch(url, {
                     method: 'POST',
                     headers: {

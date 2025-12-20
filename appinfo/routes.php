@@ -18,5 +18,6 @@ return [
         ['name' => 'api#updateMediaState', 'url' => '/api/v1/media/{id}/state', 'verb' => 'PUT'],
         ['name' => 'api#discardMedia', 'url' => '/api/v1/media/{id}/discard', 'verb' => 'POST'],
         ['name' => 'api#updatePreset', 'url' => '/api/v1/media/{id}/preset', 'verb' => 'PUT'],
+        ['name' => 'api#resetDatabase', 'url' => '/api/v1/reset-database', 'verb' => 'POST'],
     ],
 ];
