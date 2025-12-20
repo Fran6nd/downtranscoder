@@ -151,19 +151,25 @@
 		// Show original size
 		var sizeInfo = '<div class="media-size">' + this.formatSize(item.size) + '</div>';
 
-		// Build title attribute - show abort reason for aborted items, otherwise show path
-		var titleAttr = '';
-		if (columnId === 'aborted' && item.abortReason) {
-			titleAttr = 'Error: ' + this.escapeHtml(item.abortReason);
-		} else {
-			titleAttr = this.escapeHtml(item.path);
+		// Show abort reason for aborted items
+		var abortReasonInfo = '';
+		if (columnId === 'aborted') {
+			if (item.abortReason) {
+				abortReasonInfo = '<div class="media-abort-reason" style="color: #e9322d; font-size: 11px; margin-top: 4px; word-wrap: break-word;">Error: ' + this.escapeHtml(item.abortReason) + '</div>';
+			} else {
+				abortReasonInfo = '<div class="media-abort-reason" style="color: #e9322d; font-size: 11px; margin-top: 4px; word-wrap: break-word;">Error: Transcoding failed (check logs for details)</div>';
+			}
 		}
+
+		// Build title attribute - show full path or abort reason
+		var titleAttr = this.escapeHtml(item.path);
 
 		return '<div class="media-item" draggable="true" data-item-id="' + item.id + '" data-column-id="' + columnId + '" data-size="' + item.size + '" data-preset="' + presetAttr + '" title="' + titleAttr + '">' +
 			'<div class="media-icon"><span class="icon-video"></span></div>' +
 			'<div class="media-info">' +
 				'<div class="media-name">' + this.escapeHtml(item.name) + '</div>' +
 				sizeInfo +
+				abortReasonInfo +
 				presetDropdown +
 			'</div>' +
 			actionButtons +
