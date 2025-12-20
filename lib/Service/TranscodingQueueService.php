@@ -180,19 +180,38 @@ class TranscodingQueueService {
         $fileAccessible = file_exists($inputPath) && is_readable($inputPath);
         $usingTempFile = false;
 
+        // Additional check: verify file size matches what Nextcloud thinks it is
+        // This helps catch cases where Nextcloud's file cache is stale
+        if ($fileAccessible) {
+            $actualSize = filesize($inputPath);
+            $expectedSize = $file->getSize();
+            if ($actualSize !== $expectedSize) {
+                $this->logger->warning("File size mismatch for {$fileId}: disk={$actualSize}, nextcloud={$expectedSize}. File may have been modified outside Nextcloud.");
+            }
+        }
+
         if (!$fileAccessible) {
             // For external storage, the path might not be accessible directly by PHP
             // Try to use Nextcloud's file stream wrapper as a workaround
-            $this->logger->warning("Direct file access failed for {$inputPath}. Attempting Nextcloud stream wrapper for external storage...");
+            $storage = $file->getStorage();
+            $storageId = $storage->getId();
+            $storageClass = get_class($storage);
+
+            $this->logger->warning("Direct file access failed for {$inputPath}. Storage: {$storageId} (class: {$storageClass}). Attempting Nextcloud stream wrapper for external storage...");
 
             try {
+                // First, verify the file still exists in Nextcloud's view
+                if (!$file->isReadable()) {
+                    throw new \Exception("File is not readable in Nextcloud (permissions issue or storage unavailable)");
+                }
+
                 // Create a temporary file and copy content using Nextcloud's file abstraction with streaming
                 $tempPath = sys_get_temp_dir() . '/nextcloud_transcode_' . $fileId . '.' . $extension;
 
                 // Use Nextcloud's fopen to get a stream (more memory efficient for large files)
                 $sourceStream = $file->fopen('r');
                 if ($sourceStream === false) {
-                    throw new \Exception("Failed to open file stream via Nextcloud");
+                    throw new \Exception("Failed to open file stream via Nextcloud (storage may be unavailable or disconnected)");
                 }
 
                 $destStream = fopen($tempPath, 'w');
@@ -217,8 +236,9 @@ class TranscodingQueueService {
             } catch (\Exception $e) {
                 $storage = $file->getStorage();
                 $storageId = $storage->getId();
+                $storageClass = get_class($storage);
 
-                $errorReason = "Cannot access file for transcoding. Direct path '{$inputPath}' not accessible and fallback failed: {$e->getMessage()}. Storage ID: {$storageId}. Please check: 1) External storage is mounted in Nextcloud, 2) PHP has permission to access external storage, 3) File hasn't been moved/renamed.";
+                $errorReason = "Cannot access file for transcoding. Direct path '{$inputPath}' not accessible and fallback failed: {$e->getMessage()}. Storage: {$storageId} ({$storageClass}). Troubleshooting steps: 1) Check if external storage is mounted and available in Nextcloud Files app, 2) Verify the external storage backend is running (SMB/NFS/etc), 3) Check that the file still exists at the original location, 4) Review Nextcloud external storage configuration in Admin settings.";
                 $this->logger->error("File {$fileId} not accessible: {$errorReason}");
 
                 // Update state to 'aborted' with reason
