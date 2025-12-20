@@ -17,7 +17,6 @@ class TranscodingQueueService {
     private TranscodingService $transcodingService;
     private MediaStateService $stateService;
 
-    private const QUEUE_KEY = 'transcode_queue';
     private const STATUS_KEY = 'transcode_status';
 
     public function __construct(
@@ -34,70 +33,6 @@ class TranscodingQueueService {
         $this->scannerService = $scannerService;
         $this->transcodingService = $transcodingService;
         $this->stateService = $stateService;
-    }
-
-    /**
-     * Get the transcode queue
-     *
-     * @return array Array of queued file IDs
-     */
-    public function getQueue(): array {
-        $queueJson = $this->config->getAppValue('downtranscoder', self::QUEUE_KEY, '[]');
-        return json_decode($queueJson, true) ?: [];
-    }
-
-    /**
-     * Add a file to the transcode queue
-     *
-     * @param int $fileId File ID to add
-     * @return bool Success
-     */
-    public function addToQueue(int $fileId): bool {
-        $file = $this->scannerService->getFileById($fileId);
-        if ($file === null) {
-            $this->logger->warning("Cannot add file {$fileId} to queue: file not found");
-            return false;
-        }
-
-        $queue = $this->getQueue();
-
-        // Check if already in queue
-        foreach ($queue as $item) {
-            if ($item['id'] === $fileId) {
-                $this->logger->info("File {$fileId} already in queue");
-                return true;
-            }
-        }
-
-        // Add to queue
-        $queue[] = [
-            'id' => $fileId,
-            'name' => $file->getName(),
-            'path' => $file->getPath(),
-            'size' => $file->getSize(),
-            'added_at' => time(),
-            'status' => 'pending',
-        ];
-
-        $this->config->setAppValue('downtranscoder', self::QUEUE_KEY, json_encode($queue));
-        $this->logger->info("Added file {$fileId} ({$file->getName()}) to transcode queue");
-
-        return true;
-    }
-
-    /**
-     * Remove a file from the transcode queue
-     *
-     * @param int $fileId File ID to remove
-     */
-    public function removeFromQueue(int $fileId): void {
-        $queue = $this->getQueue();
-        $queue = array_filter($queue, function($item) use ($fileId) {
-            return $item['id'] !== $fileId;
-        });
-
-        $this->config->setAppValue('downtranscoder', self::QUEUE_KEY, json_encode(array_values($queue)));
-        $this->logger->info("Removed file {$fileId} from transcode queue");
     }
 
     /**
@@ -248,10 +183,11 @@ class TranscodingQueueService {
         $statusJson = $this->config->getAppValue('downtranscoder', self::STATUS_KEY, '{}');
         $status = json_decode($statusJson, true) ?: [];
 
-        $queue = $this->getQueue();
-        $status['queued_items'] = count($queue);
-        $status['completed_items'] = count(array_filter($queue, fn($item) => ($item['status'] ?? '') === 'completed'));
-        $status['failed_items'] = count(array_filter($queue, fn($item) => ($item['status'] ?? '') === 'failed'));
+        // Get counts from the new database system
+        $status['queued_items'] = count($this->stateService->getMediaItemsByState('queued'));
+        $status['transcoding_items'] = count($this->stateService->getMediaItemsByState('transcoding'));
+        $status['transcoded_items'] = count($this->stateService->getMediaItemsByState('transcoded'));
+        $status['aborted_items'] = count($this->stateService->getMediaItemsByState('aborted'));
 
         return $status;
     }
@@ -262,7 +198,8 @@ class TranscodingQueueService {
      * @param array $status Status data
      */
     private function setStatus(array $status): void {
-        $currentStatus = $this->getStatus();
+        $statusJson = $this->config->getAppValue('downtranscoder', self::STATUS_KEY, '{}');
+        $currentStatus = json_decode($statusJson, true) ?: [];
         $newStatus = array_merge($currentStatus, $status);
         $this->config->setAppValue('downtranscoder', self::STATUS_KEY, json_encode($newStatus));
     }
@@ -270,44 +207,39 @@ class TranscodingQueueService {
     /**
      * Delete original file after transcoding
      *
-     * @param int $fileId File ID
+     * @param int $fileId Database ID (not file ID)
      * @return bool Success
      */
-    public function deleteOriginal(int $fileId): bool {
-        $queue = $this->getQueue();
-
-        // Find the item in queue
-        $item = null;
-        foreach ($queue as $queueItem) {
-            if ($queueItem['id'] === $fileId) {
-                $item = $queueItem;
-                break;
-            }
-        }
-
-        if ($item === null) {
-            $this->logger->warning("File {$fileId} not found in queue");
-            return false;
-        }
-
-        if (($item['status'] ?? '') !== 'completed') {
-            $this->logger->warning("File {$fileId} has not been transcoded yet");
-            return false;
-        }
-
-        $file = $this->scannerService->getFileById($fileId);
-        if ($file === null) {
-            $this->logger->warning("File {$fileId} not found");
-            return false;
-        }
-
+    public function deleteOriginal(int $id): bool {
+        // Get the media item from database
         try {
+            $items = $this->stateService->getMediaItemsByState('transcoded');
+            $mediaItem = null;
+            foreach ($items as $item) {
+                if ($item['id'] === $id) {
+                    $mediaItem = $item;
+                    break;
+                }
+            }
+
+            if ($mediaItem === null) {
+                $this->logger->warning("Media item {$id} not found");
+                return false;
+            }
+
+            $file = $this->scannerService->getFileById($mediaItem['fileId']);
+            if ($file === null) {
+                $this->logger->warning("File {$mediaItem['fileId']} not found");
+                return false;
+            }
+
             $file->delete();
-            $this->removeFromQueue($fileId);
-            $this->logger->info("Deleted original file {$fileId}");
+            // Remove from database by setting state to a removed state or deleting the record
+            // For now, we can keep it in transcoded state or add a 'deleted' state
+            $this->logger->info("Deleted original file {$mediaItem['fileId']}");
             return true;
         } catch (\Exception $e) {
-            $this->logger->error("Error deleting file {$fileId}: {$e->getMessage()}");
+            $this->logger->error("Error deleting file: {$e->getMessage()}");
             return false;
         }
     }

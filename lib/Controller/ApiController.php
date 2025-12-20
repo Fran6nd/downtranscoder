@@ -50,51 +50,6 @@ class ApiController extends Controller {
         }
     }
 
-    /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     */
-    public function getQueue(): JSONResponse {
-        try {
-            $queue = $this->queueService->getQueue();
-            return new JSONResponse($queue);
-        } catch (\Exception $e) {
-            return new JSONResponse(
-                ['error' => $e->getMessage()],
-                Http::STATUS_INTERNAL_SERVER_ERROR
-            );
-        }
-    }
-
-    /**
-     * @NoAdminRequired
-     */
-    public function addToQueue(int $fileId): JSONResponse {
-        try {
-            $this->queueService->addToQueue($fileId);
-            return new JSONResponse(['success' => true]);
-        } catch (\Exception $e) {
-            return new JSONResponse(
-                ['error' => $e->getMessage()],
-                Http::STATUS_INTERNAL_SERVER_ERROR
-            );
-        }
-    }
-
-    /**
-     * @NoAdminRequired
-     */
-    public function removeFromQueue(int $fileId): JSONResponse {
-        try {
-            $this->queueService->removeFromQueue($fileId);
-            return new JSONResponse(['success' => true]);
-        } catch (\Exception $e) {
-            return new JSONResponse(
-                ['error' => $e->getMessage()],
-                Http::STATUS_INTERNAL_SERVER_ERROR
-            );
-        }
-    }
 
     /**
      * @NoAdminRequired
