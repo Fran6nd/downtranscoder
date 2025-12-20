@@ -41,6 +41,12 @@ class MediaScannerService {
      * @return array Array of large media files with metadata
      */
     public function scanForLargeFiles(): array {
+        // Clear previous "found" items before scanning
+        $clearedCount = $this->stateService->clearItemsByState('found');
+        if ($clearedCount > 0) {
+            $this->logger->info("Cleared {$clearedCount} previously found items from Media Found column");
+        }
+
         $triggerSizeGB = (int) $this->config->getAppValue('downtranscoder', 'trigger_size_gb', '10');
         $triggerSizeBytes = $triggerSizeGB * 1024 * 1024 * 1024;
 

@@ -125,4 +125,21 @@ class MediaItemMapper extends QBMapper {
 
         return $qb->execute();
     }
+
+    /**
+     * Delete all items with a specific state for a user
+     *
+     * @param string $userId
+     * @param string $state State to delete
+     * @return int Number of deleted items
+     */
+    public function deleteByState(string $userId, string $state): int {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->delete($this->getTableName())
+            ->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)))
+            ->andWhere($qb->expr()->eq('state', $qb->createNamedParameter($state)));
+
+        return $qb->executeStatement();
+    }
 }

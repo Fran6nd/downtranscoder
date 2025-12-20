@@ -136,7 +136,7 @@ class TranscodingQueueService {
     private function transcodeFile(int $fileId): bool {
         $file = $this->scannerService->getFileById($fileId);
         if ($file === null) {
-            $errorReason = "File {$fileId} not found for transcoding";
+            $errorReason = "File no longer exists in Nextcloud (fileId: {$fileId}). The file may have been deleted, moved outside Nextcloud, or external storage was remounted. Please rescan your media to update the file list.";
             $this->logger->error($errorReason);
 
             // Update state to 'aborted' with reason

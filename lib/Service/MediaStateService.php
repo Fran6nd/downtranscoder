@@ -171,4 +171,15 @@ class MediaStateService {
         $userId = $this->getUserId();
         return $this->mapper->deleteOldDiscarded($userId);
     }
+
+    /**
+     * Clear all items with a specific state
+     *
+     * @param string $state State to clear (e.g., 'found')
+     * @return int Number of deleted items
+     */
+    public function clearItemsByState(string $state): int {
+        $userId = $this->getUserId();
+        return $this->mapper->deleteByState($userId, $state);
+    }
 }
