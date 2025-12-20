@@ -7,6 +7,7 @@ return [
 
         // API routes
         ['name' => 'api#scan', 'url' => '/api/v1/scan', 'verb' => 'GET'],
+        ['name' => 'api#getScanStatus', 'url' => '/api/v1/scan/status', 'verb' => 'GET'],
         ['name' => 'api#startTranscoding', 'url' => '/api/v1/transcode/start', 'verb' => 'POST'],
         ['name' => 'api#startTranscodingSingle', 'url' => '/api/v1/transcode/start-single/{id}', 'verb' => 'POST'],
         ['name' => 'api#getStatus', 'url' => '/api/v1/transcode/status', 'verb' => 'GET'],

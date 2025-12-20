@@ -23,6 +23,8 @@ class MediaScannerService {
     // Supported image extensions
     private const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'webp'];
 
+    private const SCAN_STATUS_KEY = 'scan_status';
+
     public function __construct(
         IRootFolder $rootFolder,
         IConfig $config,
@@ -41,6 +43,13 @@ class MediaScannerService {
      * @return array Array of large media files with metadata
      */
     public function scanForLargeFiles(): array {
+        // Set scan status to scanning
+        $this->setScanStatus([
+            'is_scanning' => true,
+            'started_at' => time(),
+            'files_found' => 0,
+        ]);
+
         // Clear previous "found" items before scanning
         $clearedCount = $this->stateService->clearItemsByState('found');
         if ($clearedCount > 0) {
@@ -110,6 +119,13 @@ class MediaScannerService {
                 $this->logger->warning("Could not add media item to database: {$e->getMessage()}");
             }
         }
+
+        // Set scan status to complete
+        $this->setScanStatus([
+            'is_scanning' => false,
+            'completed_at' => time(),
+            'files_found' => count($largeFiles),
+        ]);
 
         return $largeFiles;
     }
@@ -254,5 +270,34 @@ class MediaScannerService {
         }
 
         return null;
+    }
+
+    /**
+     * Get scan status
+     *
+     * @return array Status information
+     */
+    public function getScanStatus(): array {
+        $statusJson = $this->config->getAppValue('downtranscoder', self::SCAN_STATUS_KEY, '{}');
+        $status = json_decode($statusJson, true) ?: [];
+
+        // Provide default values
+        if (!isset($status['is_scanning'])) {
+            $status['is_scanning'] = false;
+        }
+
+        return $status;
+    }
+
+    /**
+     * Set scan status
+     *
+     * @param array $status Status data
+     */
+    private function setScanStatus(array $status): void {
+        $statusJson = $this->config->getAppValue('downtranscoder', self::SCAN_STATUS_KEY, '{}');
+        $currentStatus = json_decode($statusJson, true) ?: [];
+        $newStatus = array_merge($currentStatus, $status);
+        $this->config->setAppValue('downtranscoder', self::SCAN_STATUS_KEY, json_encode($newStatus));
     }
 }

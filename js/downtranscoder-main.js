@@ -266,29 +266,24 @@
 	KanbanApp.prototype.triggerScan = function() {
 		if (this.isScanning) return;
 
-		this.isScanning = true;
 		var btn = document.getElementById('btn-scan');
-		btn.disabled = true;
-		btn.innerHTML = '<span class="icon-loading-small"></span> Scanning...';
-
 		var self = this;
+
+		// Queue the scan job
 		this.ajax('GET', OC.generateUrl('/apps/downtranscoder/api/v1/scan'))
-			.then(function(newFiles) {
-				// After scanning, reload all media items from database
-				// This ensures we have the correct database IDs
-				return self.loadMediaItems();
-			})
-			.then(function() {
-				OC.Notification.showTemporary('Scan complete');
+			.then(function(response) {
+				if (response.success) {
+					self.isScanning = true;
+					btn.disabled = true;
+					btn.innerHTML = '<span class="icon-loading-small"></span> Scanning...';
+					OC.Notification.showTemporary('Scan started in background');
+				} else {
+					OC.Notification.showTemporary(response.message || 'Scan already in progress', { type: 'info' });
+				}
 			})
 			.catch(function(error) {
-				console.error('Error scanning:', error);
-				OC.Notification.showTemporary('Failed to scan for media files', { type: 'error' });
-			})
-			.finally(function() {
-				self.isScanning = false;
-				btn.disabled = false;
-				btn.innerHTML = '<span class="icon-search"></span> Scan Media';
+				console.error('Error starting scan:', error);
+				OC.Notification.showTemporary('Failed to start scan', { type: 'error' });
 			});
 	};
 
@@ -387,6 +382,17 @@
 
 	KanbanApp.prototype.updateTranscodingStatus = function() {
 		var self = this;
+
+		// Check scan status
+		this.ajax('GET', OC.generateUrl('/apps/downtranscoder/api/v1/scan/status'))
+			.then(function(scanStatus) {
+				self.updateScanButton(scanStatus);
+			})
+			.catch(function(error) {
+				console.error('Error getting scan status:', error);
+			});
+
+		// Check transcoding status
 		this.ajax('GET', OC.generateUrl('/apps/downtranscoder/api/v1/transcode/status'))
 			.then(function(status) {
 				var needsRefresh = false;
@@ -439,6 +445,29 @@
 				// Silently fail for polling
 				console.error('Error updating status:', error);
 			});
+	};
+
+	KanbanApp.prototype.updateScanButton = function(scanStatus) {
+		var btn = document.getElementById('btn-scan');
+		if (!btn) return;
+
+		var wasScanning = this.isScanning;
+		this.isScanning = scanStatus.is_scanning || false;
+
+		if (this.isScanning) {
+			btn.disabled = true;
+			btn.innerHTML = '<span class="icon-loading-small"></span> Scanning...';
+		} else {
+			btn.disabled = false;
+			btn.innerHTML = '<span class="icon-search"></span> Scan Media';
+
+			// If scan just completed, reload media items and show notification
+			if (wasScanning && !this.isScanning) {
+				this.loadMediaItems();
+				var filesFound = scanStatus.files_found || 0;
+				OC.Notification.showTemporary('Scan complete. Found ' + filesFound + ' files');
+			}
+		}
 	};
 
 	KanbanApp.prototype.updateTranscodeButton = function() {

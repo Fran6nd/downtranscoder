@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace OCA\DownTranscoder\Controller;
 
+use OCA\DownTranscoder\BackgroundJob\ScanJob;
 use OCA\DownTranscoder\Service\MediaScannerService;
 use OCA\DownTranscoder\Service\TranscodingQueueService;
 use OCA\DownTranscoder\Service\MediaStateService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\BackgroundJob\IJobList;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 
@@ -17,6 +19,7 @@ class ApiController extends Controller {
     private MediaScannerService $scannerService;
     private TranscodingQueueService $queueService;
     private MediaStateService $stateService;
+    private IJobList $jobList;
     private LoggerInterface $logger;
 
     public function __construct(
@@ -25,24 +28,45 @@ class ApiController extends Controller {
         MediaScannerService $scannerService,
         TranscodingQueueService $queueService,
         MediaStateService $stateService,
+        IJobList $jobList,
         LoggerInterface $logger
     ) {
         parent::__construct($appName, $request);
         $this->scannerService = $scannerService;
         $this->queueService = $queueService;
         $this->stateService = $stateService;
+        $this->jobList = $jobList;
         $this->logger = $logger;
     }
 
     /**
+     * Queue a background scan job
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
     public function scan(): JSONResponse {
         try {
-            $files = $this->scannerService->scanForLargeFiles();
-            return new JSONResponse($files);
+            // Check if a scan is already running
+            $status = $this->scannerService->getScanStatus();
+            if ($status['is_scanning'] ?? false) {
+                return new JSONResponse([
+                    'success' => false,
+                    'message' => 'A scan is already in progress',
+                    'status' => $status
+                ]);
+            }
+
+            // Queue the scan job to run in the background
+            $this->jobList->add(ScanJob::class);
+            $this->logger->info('Scan job queued successfully');
+
+            return new JSONResponse([
+                'success' => true,
+                'message' => 'Scan job queued successfully'
+            ]);
         } catch (\Exception $e) {
+            $this->logger->error('Failed to queue scan job: ' . $e->getMessage());
             return new JSONResponse(
                 ['error' => $e->getMessage()],
                 Http::STATUS_INTERNAL_SERVER_ERROR
@@ -50,6 +74,23 @@ class ApiController extends Controller {
         }
     }
 
+    /**
+     * Get scan status
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function getScanStatus(): JSONResponse {
+        try {
+            $status = $this->scannerService->getScanStatus();
+            return new JSONResponse($status);
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                ['error' => $e->getMessage()],
+                Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
 
     /**
      * @NoAdminRequired
