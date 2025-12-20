@@ -138,11 +138,11 @@
 			var h264_23_estimate = this.formatSize(this.estimateTranscodedSize(item.size, 'h264_crf23'));
 
 			presetDropdown = '<select class="preset-select" data-item-id="' + item.id + '" title="Transcode Preset">' +
-				'<option value="" ' + (currentPreset === '' ? 'selected' : '') + '>Default (~' + defaultEstimate + ')</option>' +
-				'<option value="h265_crf23" ' + (currentPreset === 'h265_crf23' ? 'selected' : '') + '>H.265 CRF 23 (~' + h265_23_estimate + ')</option>' +
-				'<option value="h265_crf26" ' + (currentPreset === 'h265_crf26' ? 'selected' : '') + '>H.265 CRF 26 (~' + h265_26_estimate + ')</option>' +
-				'<option value="h265_crf28" ' + (currentPreset === 'h265_crf28' ? 'selected' : '') + '>H.265 CRF 28 (~' + h265_28_estimate + ')</option>' +
-				'<option value="h264_crf23" ' + (currentPreset === 'h264_crf23' ? 'selected' : '') + '>H.264 CRF 23 (~' + h264_23_estimate + ')</option>' +
+				'<option value="" ' + (currentPreset === '' ? 'selected' : '') + '>Default - H.265 CRF 26 (~' + defaultEstimate + ', High Quality)</option>' +
+				'<option value="h265_crf23" ' + (currentPreset === 'h265_crf23' ? 'selected' : '') + '>H.265 CRF 23 (~' + h265_23_estimate + ', Highest Quality)</option>' +
+				'<option value="h265_crf26" ' + (currentPreset === 'h265_crf26' ? 'selected' : '') + '>H.265 CRF 26 (~' + h265_26_estimate + ', High Quality)</option>' +
+				'<option value="h265_crf28" ' + (currentPreset === 'h265_crf28' ? 'selected' : '') + '>H.265 CRF 28 (~' + h265_28_estimate + ', Good Quality, Smaller)</option>' +
+				'<option value="h264_crf23" ' + (currentPreset === 'h264_crf23' ? 'selected' : '') + '>H.264 CRF 23 (~' + h264_23_estimate + ', High Quality, Compatible)</option>' +
 			'</select>';
 		}
 
@@ -291,6 +291,14 @@
 		if (itemIndex === -1) return;
 
 		var item = fromColumn.items[itemIndex];
+
+		// Confirm if dragging out of transcoding column
+		if (fromColumnId === 'transcoding') {
+			if (!confirm('This file is currently being transcoded. Do you want to abort the transcoding process?')) {
+				return;
+			}
+		}
+
 		var newState = this.getStateForColumn(toColumnId);
 
 		var self = this;
@@ -314,9 +322,22 @@
 		if (this.columns.toTranscode.items.length === 0) return;
 
 		var self = this;
-		this.ajax('POST', OC.generateUrl('/apps/downtranscoder/api/v1/transcode/start'))
+		var firstItem = this.columns.toTranscode.items[0];
+
+		// Move first item to transcoding state
+		this.ajax('PUT', OC.generateUrl('/apps/downtranscoder/api/v1/media/' + firstItem.id + '/state'), { state: 'transcoding' })
 			.then(function() {
-				OC.Notification.showTemporary('Transcoding started');
+				// Move item from toTranscode to transcoding
+				self.columns.toTranscode.items.shift();
+				firstItem.state = 'transcoding';
+				self.columns.transcoding.items.push(firstItem);
+				self.renderColumns();
+
+				// Now start the actual transcoding process
+				return self.ajax('POST', OC.generateUrl('/apps/downtranscoder/api/v1/transcode/start'));
+			})
+			.then(function() {
+				OC.Notification.showTemporary('Transcoding started for ' + firstItem.name);
 			})
 			.catch(function(error) {
 				console.error('Error starting transcoding:', error);
