@@ -67,6 +67,23 @@ class ApiController extends Controller {
     }
 
     /**
+     * Start transcoding a specific item immediately
+     *
+     * @NoAdminRequired
+     */
+    public function startTranscodingSingle(int $id): JSONResponse {
+        try {
+            $this->queueService->startTranscodingSingle($id);
+            return new JSONResponse(['success' => true]);
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                ['error' => $e->getMessage()],
+                Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    /**
      * @NoAdminRequired
      * @NoCSRFRequired
      */

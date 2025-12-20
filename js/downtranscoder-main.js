@@ -128,8 +128,8 @@
 			'</div>';
 		}
 
-		// Preset dropdown for toTranscode items - now under filename
-		if (columnId === 'toTranscode') {
+		// Preset dropdown for mediaFound and toTranscode items - now under filename
+		if (columnId === 'mediaFound' || columnId === 'toTranscode') {
 			var currentPreset = item.transcodePreset || '';
 			var defaultEstimate = this.formatSize(this.estimateTranscodedSize(item.size, null));
 			var h265_23_estimate = this.formatSize(this.estimateTranscodedSize(item.size, 'h265_crf23'));
@@ -199,8 +199,8 @@
 				e.dataTransfer.effectAllowed = 'move';
 			});
 
-			// Setup preset dropdown for toTranscode items
-			if (column.id === 'toTranscode') {
+			// Setup preset dropdown for mediaFound and toTranscode items
+			if (column.id === 'mediaFound' || column.id === 'toTranscode') {
 				var presetSelect = item.querySelector('.preset-select');
 				if (presetSelect) {
 					presetSelect.addEventListener('change', function(e) {
@@ -333,11 +333,11 @@
 				self.columns.transcoding.items.push(firstItem);
 				self.renderColumns();
 
-				// Now start the actual transcoding process
-				return self.ajax('POST', OC.generateUrl('/apps/downtranscoder/api/v1/transcode/start'));
+				// Start immediate transcoding for this specific item using the single-item endpoint
+				return self.ajax('POST', OC.generateUrl('/apps/downtranscoder/api/v1/transcode/start-single/' + firstItem.id));
 			})
 			.then(function() {
-				OC.Notification.showTemporary('Transcoding started for ' + firstItem.name);
+				OC.Notification.showTemporary('Transcoding started instantly for ' + firstItem.name);
 			})
 			.catch(function(error) {
 				console.error('Error starting transcoding:', error);
@@ -492,8 +492,11 @@
 		var self = this;
 		this.ajax('PUT', OC.generateUrl('/apps/downtranscoder/api/v1/media/' + itemId + '/preset'), { preset: preset })
 			.then(function() {
-				// Update the item in the columns
-				var item = self.columns.toTranscode.items.find(function(i) { return i.id === itemId; });
+				// Update the item in the columns (could be in mediaFound or toTranscode)
+				var item = self.columns.mediaFound.items.find(function(i) { return i.id === itemId; });
+				if (!item) {
+					item = self.columns.toTranscode.items.find(function(i) { return i.id === itemId; });
+				}
 				if (item) {
 					item.transcodePreset = preset;
 					self.renderColumns();

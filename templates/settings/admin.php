@@ -43,6 +43,34 @@ style('downtranscoder', 'admin');
             <em><?php p($l->t('Lower = better quality, larger file (Recommended: 18-28)')); ?></em>
         </p>
 
+        <p>
+            <label for="max-video-resolution"><?php p($l->t('Max Video Resolution')); ?></label>
+            <select id="max-video-resolution" name="max_video_resolution">
+                <option value="unlimited" <?php if ($_['max_video_resolution'] === 'unlimited') p('selected'); ?>>
+                    <?php p($l->t('Unlimited (No Downscaling)')); ?>
+                </option>
+                <option value="8k" <?php if ($_['max_video_resolution'] === '8k') p('selected'); ?>>
+                    <?php p($l->t('8K (7680x4320)')); ?>
+                </option>
+                <option value="4k" <?php if ($_['max_video_resolution'] === '4k') p('selected'); ?>>
+                    <?php p($l->t('4K (3840x2160) - Default')); ?>
+                </option>
+                <option value="1440p" <?php if ($_['max_video_resolution'] === '1440p') p('selected'); ?>>
+                    <?php p($l->t('1440p (2560x1440)')); ?>
+                </option>
+                <option value="1080p" <?php if ($_['max_video_resolution'] === '1080p') p('selected'); ?>>
+                    <?php p($l->t('1080p (1920x1080)')); ?>
+                </option>
+                <option value="720p" <?php if ($_['max_video_resolution'] === '720p') p('selected'); ?>>
+                    <?php p($l->t('720p (1280x720)')); ?>
+                </option>
+                <option value="480p" <?php if ($_['max_video_resolution'] === '480p') p('selected'); ?>>
+                    <?php p($l->t('480p (854x480)')); ?>
+                </option>
+            </select>
+            <em><?php p($l->t('Videos above this resolution will be downscaled. Lower resolution videos will NOT be upscaled.')); ?></em>
+        </p>
+
         <h3><?php p($l->t('Image Settings')); ?></h3>
 
         <p>

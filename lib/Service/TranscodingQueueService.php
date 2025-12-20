@@ -79,6 +79,48 @@ class TranscodingQueueService {
     }
 
     /**
+     * Start transcoding a specific item immediately (for manual trigger)
+     *
+     * @param int $id Database record ID
+     * @return bool Success
+     */
+    public function startTranscodingSingle(int $id): bool {
+        // Get the specific media item by ID
+        try {
+            $allItems = $this->stateService->getAllMediaItems();
+            $mediaItem = null;
+            foreach ($allItems as $item) {
+                if ($item['id'] === $id) {
+                    $mediaItem = $item;
+                    break;
+                }
+            }
+
+            if ($mediaItem === null) {
+                $this->logger->error("Media item {$id} not found for transcoding");
+                return false;
+            }
+
+            // Ensure item is in 'transcoding' state (should already be set by frontend)
+            if ($mediaItem['state'] !== 'transcoding') {
+                $this->logger->warning("Media item {$id} is not in 'transcoding' state, current state: {$mediaItem['state']}");
+                // Update to transcoding state
+                $this->stateService->updateMediaState($id, 'transcoding');
+            }
+
+            $this->logger->info("Starting immediate transcoding of item {$id} (fileId: {$mediaItem['fileId']})");
+
+            // Start transcoding immediately
+            $success = $this->transcodeFile($mediaItem['fileId']);
+
+            return $success;
+        } catch (\Exception $e) {
+            $this->logger->error("Error in startTranscodingSingle for item {$id}: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Transcode a single file
      *
      * @param int $fileId File ID

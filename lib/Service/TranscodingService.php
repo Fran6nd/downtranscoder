@@ -40,14 +40,32 @@ class TranscodingService {
 
         $videoCodec = $this->config->getAppValue('downtranscoder', 'video_codec', 'H265');
         $videoCRF = $this->config->getAppValue('downtranscoder', 'video_crf', '23');
+        $maxWidth = (int) $this->config->getAppValue('downtranscoder', 'max_video_width', '3840');
+        $maxHeight = (int) $this->config->getAppValue('downtranscoder', 'max_video_height', '2160');
 
         $codecName = $this->getCodecName($videoCodec);
 
+        // Build scale filter to downscale only (never upscale)
+        // Using min() ensures we only scale down if video exceeds max resolution
+        $scaleFilter = '';
+        if ($maxWidth > 0 && $maxHeight > 0) {
+            $scaleFilter = sprintf(
+                "-vf \"scale='min(%d,iw)':'min(%d,ih)':force_original_aspect_ratio=decrease\"",
+                $maxWidth,
+                $maxHeight
+            );
+        } elseif ($maxWidth > 0) {
+            $scaleFilter = sprintf("-vf \"scale='min(%d,iw)':-2\"", $maxWidth);
+        } elseif ($maxHeight > 0) {
+            $scaleFilter = sprintf("-vf \"scale=-2:'min(%d,ih)'\"", $maxHeight);
+        }
+
         $command = sprintf(
-            'ffmpeg -i %s -c:v %s -crf %s -c:a copy -movflags +faststart %s 2>&1',
+            'ffmpeg -i %s -c:v %s -crf %s %s -c:a copy -movflags +faststart %s 2>&1',
             escapeshellarg($inputPath),
             escapeshellarg($codecName),
             escapeshellarg($videoCRF),
+            $scaleFilter,
             escapeshellarg($outputPath)
         );
 
