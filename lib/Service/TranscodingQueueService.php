@@ -173,6 +173,16 @@ class TranscodingQueueService {
             return false;
         }
 
+        // Verify file actually exists on disk
+        if (!file_exists($inputPath)) {
+            $errorReason = "File does not exist on disk: {$inputPath}. The file may have been moved, deleted, or is on unmounted storage.";
+            $this->logger->error("File {$fileId} not accessible: {$errorReason}");
+
+            // Update state to 'aborted' with reason
+            $this->updateMediaStateToAborted($fileId, $errorReason);
+            return false;
+        }
+
         // Create output path
         $outputPath = $inputPath . '.transcoded.' . $extension;
 
