@@ -97,9 +97,10 @@ class MediaStateService {
      *
      * @param int $id Database record ID
      * @param string $state New state ('found', 'queued', 'transcoded', 'discarded')
+     * @param string|null $abortReason Optional abort reason (only used when state is 'aborted')
      * @return MediaItem
      */
-    public function updateMediaState(int $id, string $state): MediaItem {
+    public function updateMediaState(int $id, string $state, ?string $abortReason = null): MediaItem {
         $userId = $this->getUserId();
 
         // Find by record ID
@@ -112,6 +113,14 @@ class MediaStateService {
 
         $item->setState($state);
         $item->setUpdatedAt(time());
+
+        // Set or clear abort reason based on state
+        if ($state === 'aborted' && $abortReason !== null) {
+            $item->setAbortReason($abortReason);
+        } elseif ($state !== 'aborted') {
+            // Clear abort reason when moving out of aborted state
+            $item->setAbortReason(null);
+        }
 
         return $this->mapper->update($item);
     }

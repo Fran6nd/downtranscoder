@@ -27,6 +27,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUpdatedAt(int $updatedAt)
  * @method string|null getTranscodePreset()
  * @method void setTranscodePreset(?string $transcodePreset)
+ * @method string|null getAbortReason()
+ * @method void setAbortReason(?string $abortReason)
  */
 class MediaItem extends Entity {
     protected $fileId;
@@ -38,6 +40,7 @@ class MediaItem extends Entity {
     protected $createdAt;
     protected $updatedAt;
     protected $transcodePreset; // e.g., 'h265_crf23', 'h265_crf26', 'h265_crf28', 'h264_crf23'
+    protected $abortReason; // Error message or reason when state is 'aborted'
 
     public function __construct() {
         $this->addType('fileId', 'integer');
@@ -49,6 +52,7 @@ class MediaItem extends Entity {
         $this->addType('createdAt', 'integer');
         $this->addType('updatedAt', 'integer');
         $this->addType('transcodePreset', 'string');
+        $this->addType('abortReason', 'string');
     }
 
     public function jsonSerialize(): array {
@@ -63,6 +67,7 @@ class MediaItem extends Entity {
             'createdAt' => $this->createdAt,
             'updatedAt' => $this->updatedAt,
             'transcodePreset' => $this->transcodePreset,
+            'abortReason' => $this->abortReason,
         ];
     }
 }

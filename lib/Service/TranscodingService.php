@@ -19,6 +19,17 @@ class TranscodingService {
         $this->logger = $logger;
     }
 
+    private ?string $lastError = null;
+
+    /**
+     * Get the last error message from transcoding operations
+     *
+     * @return string|null
+     */
+    public function getLastError(): ?string {
+        return $this->lastError;
+    }
+
     /**
      * Transcode a video file using FFmpeg
      *
@@ -28,14 +39,18 @@ class TranscodingService {
      * @return bool Success
      */
     public function transcodeVideo(string $inputPath, string $outputPath, ?string $preset = null): bool {
+        $this->lastError = null;
+
         if (!file_exists($inputPath)) {
-            $this->logger->error("Input file not found: {$inputPath}");
+            $this->lastError = "Input file not found: {$inputPath}";
+            $this->logger->error($this->lastError);
             return false;
         }
 
         // Check if FFmpeg is available
         if (!$this->checkFFmpeg()) {
-            $this->logger->error("FFmpeg not found on system");
+            $this->lastError = "FFmpeg not found on system";
+            $this->logger->error($this->lastError);
             return false;
         }
 
@@ -78,12 +93,14 @@ class TranscodingService {
         exec($command, $output, $returnCode);
 
         if ($returnCode !== 0) {
-            $this->logger->error("FFmpeg failed with return code {$returnCode}: " . implode("\n", $output));
+            $this->lastError = "FFmpeg failed with return code {$returnCode}";
+            $this->logger->error("{$this->lastError}: " . implode("\n", $output));
             return false;
         }
 
         if (!file_exists($outputPath)) {
-            $this->logger->error("Output file was not created: {$outputPath}");
+            $this->lastError = "Output file was not created: {$outputPath}";
+            $this->logger->error($this->lastError);
             return false;
         }
 
@@ -109,14 +126,18 @@ class TranscodingService {
      * @return bool Success
      */
     public function compressImage(string $inputPath, string $outputPath): bool {
+        $this->lastError = null;
+
         if (!file_exists($inputPath)) {
-            $this->logger->error("Input file not found: {$inputPath}");
+            $this->lastError = "Input file not found: {$inputPath}";
+            $this->logger->error($this->lastError);
             return false;
         }
 
         // Check if FFmpeg is available
         if (!$this->checkFFmpeg()) {
-            $this->logger->error("FFmpeg not found on system");
+            $this->lastError = "FFmpeg not found on system";
+            $this->logger->error($this->lastError);
             return false;
         }
 
@@ -156,12 +177,14 @@ class TranscodingService {
         exec($command, $output, $returnCode);
 
         if ($returnCode !== 0) {
-            $this->logger->error("FFmpeg failed with return code {$returnCode}: " . implode("\n", $output));
+            $this->lastError = "FFmpeg image compression failed with return code {$returnCode}";
+            $this->logger->error("{$this->lastError}: " . implode("\n", $output));
             return false;
         }
 
         if (!file_exists($outputPath)) {
-            $this->logger->error("Output file was not created: {$outputPath}");
+            $this->lastError = "Output file was not created: {$outputPath}";
+            $this->logger->error($this->lastError);
             return false;
         }
 

@@ -136,7 +136,11 @@ class TranscodingQueueService {
     private function transcodeFile(int $fileId): bool {
         $file = $this->scannerService->getFileById($fileId);
         if ($file === null) {
-            $this->logger->error("File {$fileId} not found for transcoding");
+            $errorReason = "File {$fileId} not found for transcoding";
+            $this->logger->error($errorReason);
+
+            // Update state to 'aborted' with reason
+            $this->updateMediaStateToAborted($fileId, $errorReason);
             return false;
         }
 
@@ -161,7 +165,11 @@ class TranscodingQueueService {
         $inputPath = $file->getStorage()->getLocalFile($file->getInternalPath());
 
         if ($inputPath === false) {
-            $this->logger->error("Cannot get local path for file {$fileId}");
+            $errorReason = "Cannot get local path for file {$fileId}";
+            $this->logger->error($errorReason);
+
+            // Update state to 'aborted' with reason
+            $this->updateMediaStateToAborted($fileId, $errorReason);
             return false;
         }
 
@@ -209,23 +217,47 @@ class TranscodingQueueService {
                 }
             }
         } else {
-            $this->logger->error("Failed to transcode file {$fileId}");
+            // Get error message from TranscodingService
+            $errorReason = $this->transcodingService->getLastError() ?? "Unknown error during transcoding";
+            $this->logger->error("Failed to transcode file {$fileId}: {$errorReason}");
 
-            // Update state to 'aborted' in the database
-            try {
-                $mediaItem = $this->stateService->getMediaItemsByState('transcoding');
-                foreach ($mediaItem as $item) {
-                    if ($item['fileId'] === $fileId) {
-                        $this->stateService->updateMediaState($item['id'], 'aborted');
-                        break;
-                    }
-                }
-            } catch (\Exception $e) {
-                $this->logger->warning("Could not update media state to aborted: " . $e->getMessage());
-            }
+            // Update state to 'aborted' with reason
+            $this->updateMediaStateToAborted($fileId, $errorReason);
         }
 
         return $success;
+    }
+
+    /**
+     * Helper method to update media state to 'aborted' with a reason
+     *
+     * @param int $fileId File ID
+     * @param string $errorReason Error message or reason for abort
+     */
+    private function updateMediaStateToAborted(int $fileId, string $errorReason): void {
+        try {
+            // Try to find the item in 'transcoding' state first
+            $mediaItems = $this->stateService->getMediaItemsByState('transcoding');
+            foreach ($mediaItems as $item) {
+                if ($item['fileId'] === $fileId) {
+                    $this->stateService->updateMediaState($item['id'], 'aborted', $errorReason);
+                    return;
+                }
+            }
+
+            // If not in transcoding, check queued state
+            $mediaItems = $this->stateService->getMediaItemsByState('queued');
+            foreach ($mediaItems as $item) {
+                if ($item['fileId'] === $fileId) {
+                    $this->stateService->updateMediaState($item['id'], 'aborted', $errorReason);
+                    return;
+                }
+            }
+
+            $this->logger->warning("Could not find media item with fileId {$fileId} to mark as aborted");
+        } catch (\Exception $e) {
+            $this->logger->warning("Could not update media state to aborted: " . $e->getMessage());
+        }
     }
 
     /**

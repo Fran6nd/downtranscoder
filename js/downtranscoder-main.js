@@ -151,10 +151,18 @@
 		// Show original size
 		var sizeInfo = '<div class="media-size">' + this.formatSize(item.size) + '</div>';
 
-		return '<div class="media-item" draggable="true" data-item-id="' + item.id + '" data-column-id="' + columnId + '" data-size="' + item.size + '" data-preset="' + presetAttr + '">' +
+		// Build title attribute - show abort reason for aborted items, otherwise show path
+		var titleAttr = '';
+		if (columnId === 'aborted' && item.abortReason) {
+			titleAttr = 'Error: ' + this.escapeHtml(item.abortReason);
+		} else {
+			titleAttr = this.escapeHtml(item.path);
+		}
+
+		return '<div class="media-item" draggable="true" data-item-id="' + item.id + '" data-column-id="' + columnId + '" data-size="' + item.size + '" data-preset="' + presetAttr + '" title="' + titleAttr + '">' +
 			'<div class="media-icon"><span class="icon-video"></span></div>' +
 			'<div class="media-info">' +
-				'<div class="media-name" title="' + this.escapeHtml(item.path) + '">' + this.escapeHtml(item.name) + '</div>' +
+				'<div class="media-name">' + this.escapeHtml(item.name) + '</div>' +
 				sizeInfo +
 				presetDropdown +
 			'</div>' +
