@@ -1,0 +1,378 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR François Nouaille-Degorce
+# This file is distributed under the same license as the DownTranscoder package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DownTranscoder 1.4.7\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-12-21 00:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: js/downtranscoder-main.js:20
+msgid "Media Found"
+msgstr ""
+
+#: js/downtranscoder-main.js:21
+msgid "To Transcode"
+msgstr ""
+
+#: js/downtranscoder-main.js:22
+msgid "Transcoding In Progress"
+msgstr ""
+
+#: js/downtranscoder-main.js:23
+msgid "Transcoded (Waiting for Deletion)"
+msgstr ""
+
+#: js/downtranscoder-main.js:24
+msgid "Aborted"
+msgstr ""
+
+#: js/downtranscoder-main.js:25
+msgid "Discard"
+msgstr ""
+
+#: js/downtranscoder-main.js:45
+msgid "Media Transcoding Board"
+msgstr ""
+
+#: js/downtranscoder-main.js:48
+msgid "Scan Media"
+msgstr ""
+
+#: js/downtranscoder-main.js:51
+msgid "Start Transcoding"
+msgstr ""
+
+#: js/downtranscoder-main.js:103
+msgid "No items"
+msgstr ""
+
+#: js/downtranscoder-main.js:127
+msgid "Delete original file"
+msgstr ""
+
+#: js/downtranscoder-main.js:155
+msgid "Transcode Preset"
+msgstr ""
+
+#: js/downtranscoder-main.js:156
+msgid "Default - H.265 CRF 26 (~{size}, High Quality)"
+msgstr ""
+
+#: js/downtranscoder-main.js:157
+msgid "H.265 CRF 23 (~{size}, Highest Quality)"
+msgstr ""
+
+#: js/downtranscoder-main.js:158
+msgid "H.265 CRF 26 (~{size}, High Quality)"
+msgstr ""
+
+#: js/downtranscoder-main.js:159
+msgid "H.265 CRF 28 (~{size}, Good Quality, Smaller)"
+msgstr ""
+
+#: js/downtranscoder-main.js:160
+msgid "H.264 CRF 23 (~{size}, High Quality, Compatible)"
+msgstr ""
+
+#: js/downtranscoder-main.js:173
+msgid "Error: {reason}"
+msgstr ""
+
+#: js/downtranscoder-main.js:175
+msgid "Error: Transcoding failed (check logs for details)"
+msgstr ""
+
+#: js/downtranscoder-main.js:278
+msgid "Failed to load media items"
+msgstr ""
+
+#: js/downtranscoder-main.js:295
+msgid "A scan is already in progress"
+msgstr ""
+
+#: js/downtranscoder-main.js:311
+msgid "Scanning..."
+msgstr ""
+
+#: js/downtranscoder-main.js:312
+msgid "Scan started in background"
+msgstr ""
+
+#: js/downtranscoder-main.js:315
+msgid "Scan already in progress"
+msgstr ""
+
+#: js/downtranscoder-main.js:320
+msgid "Failed to start scan: {error}"
+msgstr ""
+
+#: js/downtranscoder-main.js:340
+msgid "This file is currently being transcoded. Do you want to abort the transcoding process?"
+msgstr ""
+
+#: js/downtranscoder-main.js:356
+msgid "Moved {name} to {column}"
+msgstr ""
+
+#: js/downtranscoder-main.js:360
+msgid "Failed to move item"
+msgstr ""
+
+#: js/downtranscoder-main.js:383
+msgid "Transcoding started instantly for {name}"
+msgstr ""
+
+#: js/downtranscoder-main.js:387
+msgid "Failed to start transcoding"
+msgstr ""
+
+#: js/downtranscoder-main.js:392
+msgid "Are you sure you want to delete the original file?"
+msgstr ""
+
+#: js/downtranscoder-main.js:402
+msgid "Original file deleted successfully"
+msgstr ""
+
+#: js/downtranscoder-main.js:406
+msgid "Failed to delete original file"
+msgstr ""
+
+#: js/downtranscoder-main.js:502
+msgid "Scan complete. Found {count} files"
+msgstr ""
+
+#: js/downtranscoder-main.js:613
+msgid "Preset updated"
+msgstr ""
+
+#: js/downtranscoder-main.js:617
+msgid "Failed to update preset"
+msgstr ""
+
+#: js/admin.js:45
+msgid "Settings saved"
+msgstr ""
+
+#: js/admin.js:52
+msgid "Are you sure you want to reset the database? This will clear all media items. This action cannot be undone!"
+msgstr ""
+
+#: js/admin.js:57
+msgid "Resetting..."
+msgstr ""
+
+#: js/admin.js:70
+msgid "Database reset successfully"
+msgstr ""
+
+#: js/admin.js:72
+msgid "Error: "
+msgstr ""
+
+#: js/admin.js:77
+msgid "Failed to reset database"
+msgstr ""
+
+#: js/admin.js:81
+msgid "🗑️ Reset Database"
+msgstr ""
+
+#: templates/settings/admin.php:7
+msgid "DownTranscoder Settings"
+msgstr ""
+
+#: templates/settings/admin.php:10
+msgid "General Settings"
+msgstr ""
+
+#: templates/settings/admin.php:13
+msgid "Trigger Size (GB)"
+msgstr ""
+
+#: templates/settings/admin.php:16
+msgid "Files larger than this will be identified for transcoding"
+msgstr ""
+
+#: templates/settings/admin.php:19
+msgid "Video Settings"
+msgstr ""
+
+#: templates/settings/admin.php:22
+msgid "Video Codec"
+msgstr ""
+
+#: templates/settings/admin.php:25
+msgid "H.264 (Widely Compatible)"
+msgstr ""
+
+#: templates/settings/admin.php:28
+msgid "H.265/HEVC (Better Compression)"
+msgstr ""
+
+#: templates/settings/admin.php:31
+msgid "VP9 (Open Source)"
+msgstr ""
+
+#: templates/settings/admin.php:34
+msgid "AV1 (Best Compression, Slower)"
+msgstr ""
+
+#: templates/settings/admin.php:40
+msgid "Video CRF (Quality)"
+msgstr ""
+
+#: templates/settings/admin.php:43
+msgid "Lower = better quality, larger file (Recommended: 18-28)"
+msgstr ""
+
+#: templates/settings/admin.php:47
+msgid "Max Video Resolution"
+msgstr ""
+
+#: templates/settings/admin.php:50
+msgid "Unlimited (No Downscaling)"
+msgstr ""
+
+#: templates/settings/admin.php:53
+msgid "8K (7680x4320)"
+msgstr ""
+
+#: templates/settings/admin.php:56
+msgid "4K (3840x2160) - Default"
+msgstr ""
+
+#: templates/settings/admin.php:59
+msgid "1440p (2560x1440)"
+msgstr ""
+
+#: templates/settings/admin.php:62
+msgid "1080p (1920x1080)"
+msgstr ""
+
+#: templates/settings/admin.php:65
+msgid "720p (1280x720)"
+msgstr ""
+
+#: templates/settings/admin.php:68
+msgid "480p (854x480)"
+msgstr ""
+
+#: templates/settings/admin.php:71
+msgid "Videos above this resolution will be downscaled. Lower resolution videos will NOT be upscaled."
+msgstr ""
+
+#: templates/settings/admin.php:75
+msgid "Max FFmpeg Threads"
+msgstr ""
+
+#: templates/settings/admin.php:78
+msgid "Maximum CPU threads for FFmpeg transcoding. 0 = auto (use all available threads)"
+msgstr ""
+
+#: templates/settings/admin.php:81
+msgid "Image Settings"
+msgstr ""
+
+#: templates/settings/admin.php:84
+msgid "Image Quality"
+msgstr ""
+
+#: templates/settings/admin.php:87
+msgid "Higher = better quality, larger file (1-100)"
+msgstr ""
+
+#: templates/settings/admin.php:91
+msgid "Max Image Width (pixels)"
+msgstr ""
+
+#: templates/settings/admin.php:94
+msgid "0 = no limit"
+msgstr ""
+
+#: templates/settings/admin.php:98
+msgid "Max Image Height (pixels)"
+msgstr ""
+
+#: templates/settings/admin.php:104
+msgid "Transcoding Queue Settings"
+msgstr ""
+
+#: templates/settings/admin.php:107
+msgid "Concurrent Transcoding Limit"
+msgstr ""
+
+#: templates/settings/admin.php:110
+msgid "Maximum number of files to transcode simultaneously in scheduled tasks (Default: 1)"
+msgstr ""
+
+#: templates/settings/admin.php:113
+msgid "Schedule Settings"
+msgstr ""
+
+#: templates/settings/admin.php:119
+msgid "Enable Scheduled Transcoding"
+msgstr ""
+
+#: templates/settings/admin.php:122
+msgid "When enabled, automatic transcoding will only run at the specified time"
+msgstr ""
+
+#: templates/settings/admin.php:126
+msgid "Scheduled Time"
+msgstr ""
+
+#: templates/settings/admin.php:129
+msgid "Time to start transcoding (processes concurrent limit items then stops until next day)"
+msgstr ""
+
+#: templates/settings/admin.php:132
+msgid "Danger Zone"
+msgstr ""
+
+#: templates/settings/admin.php:138
+msgid "⚠️ Auto-Delete Originals"
+msgstr ""
+
+#: templates/settings/admin.php:142
+msgid "WARNING: This will permanently delete original files after successful transcoding!"
+msgstr ""
+
+#: templates/settings/admin.php:148
+msgid "🗑️ Reset Database"
+msgstr ""
+
+#: templates/settings/admin.php:152
+msgid "WARNING: This will clear all media items from the database. Use this if you have database migration issues or want to start fresh."
+msgstr ""
+
+#: templates/settings/admin.php:156
+msgid "Save Settings"
+msgstr ""
+
+#: templates/settings/admin.php:159
+msgid "Manage Media"
+msgstr ""
+
+#: templates/settings/admin.php:160
+msgid "Use the main DownTranscoder page to scan for media, manage the transcoding workflow, and view progress."
+msgstr ""
+
+#: templates/settings/admin.php:162
+msgid "Go to DownTranscoder"
+msgstr ""
+
+#: lib/Settings/AdminSection.php:25
+msgid "DownTranscoder"
+msgstr ""

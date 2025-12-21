@@ -17,12 +17,12 @@
 	// Main Kanban Application
 	function KanbanApp() {
 		this.columns = {
-			mediaFound: { id: 'mediaFound', title: 'Media Found', icon: 'icon-search', items: [], allowDrop: true },
-			toTranscode: { id: 'toTranscode', title: 'To Transcode', icon: 'icon-play', items: [], allowDrop: true },
-			transcoding: { id: 'transcoding', title: 'Transcoding In Progress', icon: 'icon-loading-small', items: [], allowDrop: false },
-			transcoded: { id: 'transcoded', title: 'Transcoded (Waiting for Deletion)', icon: 'icon-checkmark', items: [], allowDrop: false },
-			aborted: { id: 'aborted', title: 'Aborted', icon: 'icon-error', items: [], allowDrop: true },
-			discard: { id: 'discard', title: 'Discard', icon: 'icon-delete', items: [], allowDrop: true }
+			mediaFound: { id: 'mediaFound', title: t('downtranscoder', 'Media Found'), icon: 'icon-search', items: [], allowDrop: true },
+			toTranscode: { id: 'toTranscode', title: t('downtranscoder', 'To Transcode'), icon: 'icon-play', items: [], allowDrop: true },
+			transcoding: { id: 'transcoding', title: t('downtranscoder', 'Transcoding In Progress'), icon: 'icon-loading-small', items: [], allowDrop: false },
+			transcoded: { id: 'transcoded', title: t('downtranscoder', 'Transcoded (Waiting for Deletion)'), icon: 'icon-checkmark', items: [], allowDrop: false },
+			aborted: { id: 'aborted', title: t('downtranscoder', 'Aborted'), icon: 'icon-error', items: [], allowDrop: true },
+			discard: { id: 'discard', title: t('downtranscoder', 'Discard'), icon: 'icon-delete', items: [], allowDrop: true }
 		};
 		this.columnOrder = ['mediaFound', 'toTranscode', 'transcoding', 'transcoded', 'aborted', 'discard'];
 		this.isScanning = false;
@@ -42,13 +42,13 @@
 
 		var html = '<div class="kanban-board">' +
 			'<div class="kanban-header">' +
-				'<h2>Media Transcoding Board</h2>' +
+				'<h2>' + t('downtranscoder', 'Media Transcoding Board') + '</h2>' +
 				'<div class="kanban-actions">' +
 					'<button id="btn-scan" class="button primary">' +
-						'<span class="icon-search"></span> Scan Media' +
+						'<span class="icon-search"></span> ' + t('downtranscoder', 'Scan Media') +
 					'</button>' +
 					'<button id="btn-transcode" class="button">' +
-						'<span class="icon-play"></span> Start Transcoding' +
+						'<span class="icon-play"></span> ' + t('downtranscoder', 'Start Transcoding') +
 					'</button>' +
 				'</div>' +
 			'</div>' +
@@ -100,7 +100,7 @@
 
 		var content = '<div class="column-content">';
 		if (column.items.length === 0) {
-			content += '<div class="empty-column"><p>No items</p></div>';
+			content += '<div class="empty-column"><p>' + t('downtranscoder', 'No items') + '</p></div>';
 		} else {
 			column.items.forEach(function(item) {
 				content += this.createMediaItemHtml(item, column.id);
@@ -124,7 +124,7 @@
 		// Delete button for transcoded items
 		if (columnId === 'transcoded') {
 			actionButtons = '<div class="media-actions">' +
-				'<button class="button-vue button-vue--error btn-delete" data-file-id="' + item.id + '" title="Delete original file">' +
+				'<button class="button-vue button-vue--error btn-delete" data-file-id="' + item.id + '" title="' + t('downtranscoder', 'Delete original file') + '">' +
 					'<span class="icon-delete"></span>' +
 				'</button>' +
 			'</div>';
@@ -152,12 +152,12 @@
 			var h265_28_estimate = this.formatSize(this.estimateTranscodedSize(item.size, 'h265_crf28'));
 			var h264_23_estimate = this.formatSize(this.estimateTranscodedSize(item.size, 'h264_crf23'));
 
-			presetDropdown = '<select class="preset-select" data-item-id="' + item.id + '" title="Transcode Preset">' +
-				'<option value="" ' + (currentPreset === '' ? 'selected' : '') + '>Default - H.265 CRF 26 (~' + defaultEstimate + ', High Quality)</option>' +
-				'<option value="h265_crf23" ' + (currentPreset === 'h265_crf23' ? 'selected' : '') + '>H.265 CRF 23 (~' + h265_23_estimate + ', Highest Quality)</option>' +
-				'<option value="h265_crf26" ' + (currentPreset === 'h265_crf26' ? 'selected' : '') + '>H.265 CRF 26 (~' + h265_26_estimate + ', High Quality)</option>' +
-				'<option value="h265_crf28" ' + (currentPreset === 'h265_crf28' ? 'selected' : '') + '>H.265 CRF 28 (~' + h265_28_estimate + ', Good Quality, Smaller)</option>' +
-				'<option value="h264_crf23" ' + (currentPreset === 'h264_crf23' ? 'selected' : '') + '>H.264 CRF 23 (~' + h264_23_estimate + ', High Quality, Compatible)</option>' +
+			presetDropdown = '<select class="preset-select" data-item-id="' + item.id + '" title="' + t('downtranscoder', 'Transcode Preset') + '">' +
+				'<option value="" ' + (currentPreset === '' ? 'selected' : '') + '>' + t('downtranscoder', 'Default - H.265 CRF 26 (~{size}, High Quality)', {size: defaultEstimate}) + '</option>' +
+				'<option value="h265_crf23" ' + (currentPreset === 'h265_crf23' ? 'selected' : '') + '>' + t('downtranscoder', 'H.265 CRF 23 (~{size}, Highest Quality)', {size: h265_23_estimate}) + '</option>' +
+				'<option value="h265_crf26" ' + (currentPreset === 'h265_crf26' ? 'selected' : '') + '>' + t('downtranscoder', 'H.265 CRF 26 (~{size}, High Quality)', {size: h265_26_estimate}) + '</option>' +
+				'<option value="h265_crf28" ' + (currentPreset === 'h265_crf28' ? 'selected' : '') + '>' + t('downtranscoder', 'H.265 CRF 28 (~{size}, Good Quality, Smaller)', {size: h265_28_estimate}) + '</option>' +
+				'<option value="h264_crf23" ' + (currentPreset === 'h264_crf23' ? 'selected' : '') + '>' + t('downtranscoder', 'H.264 CRF 23 (~{size}, High Quality, Compatible)', {size: h264_23_estimate}) + '</option>' +
 			'</select>';
 		}
 
@@ -170,9 +170,9 @@
 		var abortReasonInfo = '';
 		if (columnId === 'aborted') {
 			if (item.abortReason) {
-				abortReasonInfo = '<div class="media-abort-reason" style="color: #e9322d; font-size: 11px; margin-top: 4px; word-wrap: break-word;">Error: ' + this.escapeHtml(item.abortReason) + '</div>';
+				abortReasonInfo = '<div class="media-abort-reason" style="color: #e9322d; font-size: 11px; margin-top: 4px; word-wrap: break-word;">' + t('downtranscoder', 'Error: {reason}', {reason: this.escapeHtml(item.abortReason)}) + '</div>';
 			} else {
-				abortReasonInfo = '<div class="media-abort-reason" style="color: #e9322d; font-size: 11px; margin-top: 4px; word-wrap: break-word;">Error: Transcoding failed (check logs for details)</div>';
+				abortReasonInfo = '<div class="media-abort-reason" style="color: #e9322d; font-size: 11px; margin-top: 4px; word-wrap: break-word;">' + t('downtranscoder', 'Error: Transcoding failed (check logs for details)') + '</div>';
 			}
 		}
 
@@ -275,7 +275,7 @@
 			})
 			.catch(function(error) {
 				console.error('Error loading media items:', error);
-				OC.Notification.showTemporary('Failed to load media items', { type: 'error' });
+				OC.Notification.showTemporary(t('downtranscoder', 'Failed to load media items'), { type: 'error' });
 			});
 	};
 
@@ -292,7 +292,7 @@
 
 	KanbanApp.prototype.triggerScan = function() {
 		if (this.isScanning) {
-			OC.Notification.showTemporary('A scan is already in progress', { type: 'info' });
+			OC.Notification.showTemporary(t('downtranscoder', 'A scan is already in progress'), { type: 'info' });
 			return;
 		}
 
@@ -308,16 +308,16 @@
 				if (response.success) {
 					self.isScanning = true;
 					btn.disabled = true;
-					btn.innerHTML = '<span class="icon-loading-small"></span> Scanning...';
-					OC.Notification.showTemporary('Scan started in background');
+					btn.innerHTML = '<span class="icon-loading-small"></span> ' + t('downtranscoder', 'Scanning...');
+					OC.Notification.showTemporary(t('downtranscoder', 'Scan started in background'));
 				} else {
 					// Scan already in progress (status 409 is handled by ajax as resolve)
-					OC.Notification.showTemporary(response.message || 'Scan already in progress', { type: 'info' });
+					OC.Notification.showTemporary(response.message || t('downtranscoder', 'Scan already in progress'), { type: 'info' });
 				}
 			})
 			.catch(function(error) {
 				console.error('DownTranscoder: Error starting scan:', error);
-				OC.Notification.showTemporary('Failed to start scan: ' + error, { type: 'error' });
+				OC.Notification.showTemporary(t('downtranscoder', 'Failed to start scan: {error}', {error: error}), { type: 'error' });
 			});
 	};
 
@@ -337,7 +337,7 @@
 
 		// Confirm if dragging out of transcoding column
 		if (fromColumnId === 'transcoding') {
-			if (!confirm('This file is currently being transcoded. Do you want to abort the transcoding process?')) {
+			if (!confirm(t('downtranscoder', 'This file is currently being transcoded. Do you want to abort the transcoding process?'))) {
 				return;
 			}
 		}
@@ -353,11 +353,11 @@
 				toColumn.items.push(item);
 
 				self.renderColumns();
-				OC.Notification.showTemporary('Moved ' + item.name + ' to ' + toColumn.title);
+				OC.Notification.showTemporary(t('downtranscoder', 'Moved {name} to {column}', {name: item.name, column: toColumn.title}));
 			})
 			.catch(function(error) {
 				console.error('Error updating item state:', error);
-				OC.Notification.showTemporary('Failed to move item', { type: 'error' });
+				OC.Notification.showTemporary(t('downtranscoder', 'Failed to move item'), { type: 'error' });
 			});
 	};
 
@@ -380,16 +380,16 @@
 				return self.ajax('POST', OC.generateUrl('/apps/downtranscoder/api/v1/transcode/start-single/' + firstItem.id));
 			})
 			.then(function() {
-				OC.Notification.showTemporary('Transcoding started instantly for ' + firstItem.name);
+				OC.Notification.showTemporary(t('downtranscoder', 'Transcoding started instantly for {name}', {name: firstItem.name}));
 			})
 			.catch(function(error) {
 				console.error('Error starting transcoding:', error);
-				OC.Notification.showTemporary('Failed to start transcoding', { type: 'error' });
+				OC.Notification.showTemporary(t('downtranscoder', 'Failed to start transcoding'), { type: 'error' });
 			});
 	};
 
 	KanbanApp.prototype.handleDeleteOriginal = function(fileId) {
-		if (!confirm('Are you sure you want to delete the original file?')) return;
+		if (!confirm(t('downtranscoder', 'Are you sure you want to delete the original file?'))) return;
 
 		var self = this;
 		this.ajax('DELETE', OC.generateUrl('/apps/downtranscoder/api/v1/original/' + fileId))
@@ -399,11 +399,11 @@
 					self.columns.transcoded.items.splice(index, 1);
 					self.renderColumns();
 				}
-				OC.Notification.showTemporary('Original file deleted successfully');
+				OC.Notification.showTemporary(t('downtranscoder', 'Original file deleted successfully'));
 			})
 			.catch(function(error) {
 				console.error('Error deleting original:', error);
-				OC.Notification.showTemporary('Failed to delete original file', { type: 'error' });
+				OC.Notification.showTemporary(t('downtranscoder', 'Failed to delete original file'), { type: 'error' });
 			});
 	};
 
@@ -490,16 +490,16 @@
 
 		if (this.isScanning) {
 			btn.disabled = true;
-			btn.innerHTML = '<span class="icon-loading-small"></span> Scanning...';
+			btn.innerHTML = '<span class="icon-loading-small"></span> ' + t('downtranscoder', 'Scanning...');
 		} else {
 			btn.disabled = false;
-			btn.innerHTML = '<span class="icon-search"></span> Scan Media';
+			btn.innerHTML = '<span class="icon-search"></span> ' + t('downtranscoder', 'Scan Media');
 
 			// If scan just completed, reload media items and show notification
 			if (wasScanning && !this.isScanning) {
 				this.loadMediaItems();
 				var filesFound = scanStatus.files_found || 0;
-				OC.Notification.showTemporary('Scan complete. Found ' + filesFound + ' files');
+				OC.Notification.showTemporary(t('downtranscoder', 'Scan complete. Found {count} files', {count: filesFound}));
 			}
 		}
 	};
@@ -610,11 +610,11 @@
 					item.transcodePreset = preset;
 					self.renderColumns();
 				}
-				OC.Notification.showTemporary('Preset updated');
+				OC.Notification.showTemporary(t('downtranscoder', 'Preset updated'));
 			})
 			.catch(function(error) {
 				console.error('Error updating preset:', error);
-				OC.Notification.showTemporary('Failed to update preset', { type: 'error' });
+				OC.Notification.showTemporary(t('downtranscoder', 'Failed to update preset'), { type: 'error' });
 			});
 	};
 

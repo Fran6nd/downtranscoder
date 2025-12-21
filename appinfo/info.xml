@@ -22,15 +22,14 @@
 
 ⚠️ **Warning**: Automatic deletion is risky — always double-check before enabling it.
     ]]></description>
-    <version>1.4.7</version>
+    <version>1.4.8</version>
     <licence>agpl</licence>
-    <author mail="you@example.com" homepage="https://github.com/yourusername">Your Name</author>
+    <author mail="francoisnd1@gmail.com">François Nouaille-Degorce</author>
     <namespace>DownTranscoder</namespace>
     <category>multimedia</category>
     <category>tools</category>
-    <bugs>https://github.com/yourusername/nextcloud-downtranscoder/issues</bugs>
-    <repository type="git">https://github.com/yourusername/nextcloud-downtranscoder.git</repository>
-    <screenshot>https://raw.githubusercontent.com/yourusername/nextcloud-downtranscoder/main/screenshots/screenshot.png</screenshot>
+    <bugs>https://github.com/Fran6nd/downtranscoder/issues</bugs>
+    <repository type="git">https://github.com/Fran6nd/downtranscoder.git</repository>
     <dependencies>
         <nextcloud min-version="25" max-version="35"/>
         <php min-version="8.0"/>
