@@ -260,7 +260,22 @@ class TranscodingQueueService {
         $success = false;
 
         if ($isVideo) {
+            // Get file owner for progress updates
+            $owner = $file->getOwner();
+            $ownerId = $owner ? $owner->getUID() : null;
+
+            // Set up progress callback to update database
+            if ($ownerId) {
+                $this->transcodingService->setProgressCallback(function($progress) use ($fileId, $ownerId) {
+                    $this->stateService->updateTranscodeProgress($fileId, $progress, $ownerId);
+                    $this->logger->debug("Transcode progress for file {$fileId}: {$progress}%");
+                });
+            }
+
             $success = $this->transcodingService->transcodeVideo($inputPath, $outputPath, $preset);
+
+            // Clear callback after transcode
+            $this->transcodingService->setProgressCallback(null);
         } elseif ($isImage) {
             $success = $this->transcodingService->compressImage($inputPath, $outputPath);
         }

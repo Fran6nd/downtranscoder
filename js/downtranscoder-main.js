@@ -119,6 +119,7 @@
 	KanbanApp.prototype.createMediaItemHtml = function(item, columnId) {
 		var actionButtons = '';
 		var presetDropdown = '';
+		var progressBar = '';
 
 		// Delete button for transcoded items
 		if (columnId === 'transcoded') {
@@ -126,6 +127,19 @@
 				'<button class="button-vue button-vue--error btn-delete" data-file-id="' + item.id + '" title="Delete original file">' +
 					'<span class="icon-delete"></span>' +
 				'</button>' +
+			'</div>';
+		}
+
+		// Progress bar for transcoding items
+		if (columnId === 'transcoding') {
+			// Use real progress from database if available, otherwise estimate
+			var progress = item.transcodeProgress || this.estimateTranscodeProgress(item);
+			var progressColor = progress < 30 ? '#0082c9' : progress < 70 ? '#0082c9' : '#46ba61';
+			progressBar = '<div class="transcode-progress-container" style="margin-top: 6px; background: #f0f0f0; border-radius: 3px; height: 18px; overflow: hidden; position: relative;">' +
+				'<div class="transcode-progress-bar" style="background: ' + progressColor + '; height: 100%; width: ' + progress + '%; transition: width 0.5s ease;"></div>' +
+				'<div class="transcode-progress-text" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #333;">' +
+					progress + '%' +
+				'</div>' +
 			'</div>';
 		}
 
@@ -171,6 +185,7 @@
 				'<div class="media-name">' + this.escapeHtml(item.name) + '</div>' +
 				sizeInfo +
 				abortReasonInfo +
+				progressBar +
 				presetDropdown +
 			'</div>' +
 			actionButtons +
@@ -542,6 +557,38 @@
 
 		var ratio = compressionRatios[preset] || compressionRatios['default'];
 		return Math.round(originalSize * ratio);
+	};
+
+	KanbanApp.prototype.estimateTranscodeProgress = function(item) {
+		// Estimate progress based on file size and elapsed time
+		// This is a rough approximation since we don't have real FFmpeg progress
+
+		var now = Math.floor(Date.now() / 1000); // Current time in seconds
+		var updatedAt = item.updatedAt || now; // When item moved to transcoding state
+		var elapsedSeconds = now - updatedAt;
+
+		// Estimate total transcode time based on file size
+		// Rough estimate: ~60 seconds per GB (can vary widely based on CPU, codec, etc.)
+		var sizeGB = item.size / (1024 * 1024 * 1024);
+		var estimatedTotalSeconds = sizeGB * 60;
+
+		// Adjust for very small or very large files
+		if (sizeGB < 1) {
+			estimatedTotalSeconds = 30; // Minimum 30 seconds for small files
+		} else if (sizeGB > 100) {
+			// For very large files, scale more conservatively
+			estimatedTotalSeconds = 60 * 60 + (sizeGB - 100) * 30; // 60 min base + 30s per GB over 100
+		}
+
+		// Calculate progress percentage
+		var progress = Math.min(95, Math.floor((elapsedSeconds / estimatedTotalSeconds) * 100));
+
+		// Never show 0% if transcoding has started
+		if (progress < 5 && elapsedSeconds > 0) {
+			progress = 5;
+		}
+
+		return progress;
 	};
 
 	KanbanApp.prototype.escapeHtml = function(text) {

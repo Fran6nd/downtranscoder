@@ -170,6 +170,24 @@ class MediaStateService {
     }
 
     /**
+     * Update transcode progress for a media item by file ID
+     * This method doesn't require user session (called from background job)
+     *
+     * @param int $fileId Nextcloud file ID
+     * @param int $progress Progress percentage (0-100)
+     * @param string $userId User ID
+     */
+    public function updateTranscodeProgress(int $fileId, int $progress, string $userId): void {
+        try {
+            $item = $this->mapper->findByFileId($fileId, $userId);
+            $item->setTranscodeProgress($progress);
+            $this->mapper->update($item);
+        } catch (DoesNotExistException $e) {
+            // Item not found, ignore
+        }
+    }
+
+    /**
      * Clean up old discarded items
      */
     public function cleanupOldDiscarded(): int {

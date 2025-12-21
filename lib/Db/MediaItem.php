@@ -29,6 +29,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setTranscodePreset(?string $transcodePreset)
  * @method string|null getAbortReason()
  * @method void setAbortReason(?string $abortReason)
+ * @method int|null getTranscodeProgress()
+ * @method void setTranscodeProgress(?int $transcodeProgress)
  */
 class MediaItem extends Entity {
     protected $fileId;
@@ -41,6 +43,7 @@ class MediaItem extends Entity {
     protected $updatedAt;
     protected $transcodePreset; // e.g., 'h265_crf23', 'h265_crf26', 'h265_crf28', 'h264_crf23'
     protected $abortReason; // Error message or reason when state is 'aborted'
+    protected $transcodeProgress; // Progress percentage (0-100) when state is 'transcoding'
 
     public function __construct() {
         $this->addType('fileId', 'integer');
@@ -53,6 +56,7 @@ class MediaItem extends Entity {
         $this->addType('updatedAt', 'integer');
         $this->addType('transcodePreset', 'string');
         $this->addType('abortReason', 'string');
+        $this->addType('transcodeProgress', 'integer');
     }
 
     public function jsonSerialize(): array {
@@ -68,6 +72,7 @@ class MediaItem extends Entity {
             'updatedAt' => $this->updatedAt,
             'transcodePreset' => $this->transcodePreset,
             'abortReason' => $this->abortReason,
+            'transcodeProgress' => $this->transcodeProgress,
         ];
     }
 }
