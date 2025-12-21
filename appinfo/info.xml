@@ -42,6 +42,7 @@
     <commands>
         <command>OCA\DownTranscoder\Command\ScanCommand</command>
         <command>OCA\DownTranscoder\Command\TranscodeCommand</command>
+        <command>OCA\DownTranscoder\Command\ResetCommand</command>
     </commands>
     <background-jobs>
         <job>OCA\DownTranscoder\BackgroundJob\TranscodeJob</job>

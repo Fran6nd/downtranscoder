@@ -49,6 +49,13 @@ class MediaScannerService {
     public function scanForLargeFiles(): array {
         $this->logger->info('>>> scanForLargeFiles() called');
 
+        // Check if already scanning
+        $status = $this->getScanStatus();
+        if ($status['is_scanning'] ?? false) {
+            $this->logger->warning('>>> Scan already in progress - aborting duplicate scan');
+            return [];
+        }
+
         // Set scan status to scanning
         $this->setScanStatus([
             'is_scanning' => true,
@@ -57,118 +64,122 @@ class MediaScannerService {
         ]);
         $this->logger->info('>>> Scan status set to: is_scanning=true');
 
-        // Clear ONLY 'found' items before starting a new scan
-        // Keep queued, transcoding, aborted, transcoded, and discarded items
-        try {
-            $clearedCount = $this->stateService->clearItemsByState('found');
-            $this->logger->info(">>> Cleared {$clearedCount} items in 'found' state before scan");
-        } catch (\Exception $e) {
-            $this->logger->error(">>> Failed to clear 'found' items: " . $e->getMessage());
-        }
-
-        $triggerSizeGB = (int) $this->config->getAppValue('downtranscoder', 'trigger_size_gb', '10');
-        $triggerSizeBytes = $triggerSizeGB * 1024 * 1024 * 1024;
-
-        // Get configured scan paths
-        $scanPathsJson = $this->config->getAppValue('downtranscoder', 'scan_paths', '[]');
-        $scanPaths = json_decode($scanPathsJson, true) ?: [];
-
-        // Get include external storages setting
-        $includeExternal = $this->config->getAppValue('downtranscoder', 'include_external_storage', 'true') === 'true';
-
-        $this->logger->info("=== SCAN STARTING ===");
-        $this->logger->info("Trigger size: {$triggerSizeGB} GB ({$triggerSizeBytes} bytes)");
-        if (!empty($scanPaths)) {
-            $this->logger->info("Scan paths configured: " . implode(', ', $scanPaths));
-        } else {
-            $this->logger->info("No specific paths configured, scanning all user files");
-        }
-        $this->logger->info("Include external storages: " . ($includeExternal ? 'Yes' : 'No'));
-
         $largeFiles = [];
-        $totalScanned = 0;
 
-        // If specific paths are configured, scan only those
-        if (!empty($scanPaths)) {
-            foreach ($scanPaths as $scanPath) {
-                $this->logger->debug("Scanning configured path: {$scanPath}");
-                $files = $this->scanPath($scanPath, $triggerSizeBytes, $includeExternal);
-                $largeFiles = array_merge($largeFiles, $files);
-                $totalScanned += count($files);
-            }
-        } else {
-            // Otherwise, scan all users
-            $this->logger->info(">>> No specific scan paths configured - scanning ALL USERS");
-            $userCount = 0;
-
+        try {
+            // Clear ONLY 'found' items before starting a new scan
+            // Keep queued, transcoding, aborted, transcoded, and discarded items
             try {
-                $this->userManager->callForAllUsers(function ($user) use ($triggerSizeBytes, $includeExternal, &$largeFiles, &$totalScanned, &$userCount) {
-                    $userCount++;
-                    $userId = $user->getUID();
-                    $this->logger->info(">>> [User #{$userCount}] Processing user: {$userId}");
+                $clearedCount = $this->stateService->clearItemsByState('found');
+                $this->logger->info(">>> Cleared {$clearedCount} items in 'found' state before scan");
+            } catch (\Exception $e) {
+                $this->logger->error(">>> Failed to clear 'found' items: " . $e->getMessage());
+            }
 
-                    try {
-                        // Get the user's folder
-                        $userFolder = $this->rootFolder->getUserFolder($userId);
-                        $folderPath = $userFolder->getPath();
-                        $this->logger->info(">>> [User {$userId}] Got user folder: {$folderPath}");
+            $triggerSizeGB = (int) $this->config->getAppValue('downtranscoder', 'trigger_size_gb', '10');
+            $triggerSizeBytes = $triggerSizeGB * 1024 * 1024 * 1024;
 
-                        if ($userFolder instanceof Folder) {
-                            $this->logger->info(">>> [User {$userId}] Starting folder scan (includeExternal: " . ($includeExternal ? 'YES' : 'NO') . ")...");
-                            $files = $this->scanFolder($userFolder, $triggerSizeBytes, $includeExternal);
-                            $largeFiles = array_merge($largeFiles, $files);
-                            $totalScanned += count($files);
-                            $this->logger->info(">>> [User {$userId}] RESULT: Found " . count($files) . " large files (total so far: " . count($largeFiles) . ")");
-                        } else {
-                            $this->logger->error(">>> [User {$userId}] ERROR: User folder is not a Folder instance!");
+            // Get configured scan paths
+            $scanPathsJson = $this->config->getAppValue('downtranscoder', 'scan_paths', '[]');
+            $scanPaths = json_decode($scanPathsJson, true) ?: [];
+
+            // Get include external storages setting
+            $includeExternal = $this->config->getAppValue('downtranscoder', 'include_external_storage', 'true') === 'true';
+
+            $this->logger->info("=== SCAN STARTING ===");
+            $this->logger->info("Trigger size: {$triggerSizeGB} GB ({$triggerSizeBytes} bytes)");
+            if (!empty($scanPaths)) {
+                $this->logger->info("Scan paths configured: " . implode(', ', $scanPaths));
+            } else {
+                $this->logger->info("No specific paths configured, scanning all user files");
+            }
+            $this->logger->info("Include external storages: " . ($includeExternal ? 'Yes' : 'No'));
+
+            $totalScanned = 0;
+
+            // If specific paths are configured, scan only those
+            if (!empty($scanPaths)) {
+                foreach ($scanPaths as $scanPath) {
+                    $this->logger->debug("Scanning configured path: {$scanPath}");
+                    $files = $this->scanPath($scanPath, $triggerSizeBytes, $includeExternal);
+                    $largeFiles = array_merge($largeFiles, $files);
+                    $totalScanned += count($files);
+                }
+            } else {
+                // Otherwise, scan all users
+                $this->logger->info(">>> No specific scan paths configured - scanning ALL USERS");
+                $userCount = 0;
+
+                try {
+                    $this->userManager->callForAllUsers(function ($user) use ($triggerSizeBytes, $includeExternal, &$largeFiles, &$totalScanned, &$userCount) {
+                        $userCount++;
+                        $userId = $user->getUID();
+                        $this->logger->info(">>> [User #{$userCount}] Processing user: {$userId}");
+
+                        try {
+                            // Get the user's folder
+                            $userFolder = $this->rootFolder->getUserFolder($userId);
+                            $folderPath = $userFolder->getPath();
+                            $this->logger->info(">>> [User {$userId}] Got user folder: {$folderPath}");
+
+                            if ($userFolder instanceof Folder) {
+                                $this->logger->info(">>> [User {$userId}] Starting folder scan (includeExternal: " . ($includeExternal ? 'YES' : 'NO') . ")...");
+                                $files = $this->scanFolder($userFolder, $triggerSizeBytes, $includeExternal);
+                                $largeFiles = array_merge($largeFiles, $files);
+                                $totalScanned += count($files);
+                                $this->logger->info(">>> [User {$userId}] RESULT: Found " . count($files) . " large files (total so far: " . count($largeFiles) . ")");
+                            } else {
+                                $this->logger->error(">>> [User {$userId}] ERROR: User folder is not a Folder instance!");
+                            }
+                        } catch (\Exception $e) {
+                            $this->logger->error(">>> [User {$userId}] EXCEPTION: " . $e->getMessage());
+                            $this->logger->error(">>> [User {$userId}] Stack trace: " . $e->getTraceAsString());
                         }
-                    } catch (\Exception $e) {
-                        $this->logger->error(">>> [User {$userId}] EXCEPTION: " . $e->getMessage());
-                        $this->logger->error(">>> [User {$userId}] Stack trace: " . $e->getTraceAsString());
-                    }
-                });
+                    });
 
-                $this->logger->info(">>> Finished scanning {$userCount} total users");
-            } catch (\Exception $e) {
-                $this->logger->error(">>> FATAL ERROR in callForAllUsers: " . $e->getMessage());
-                $this->logger->error(">>> Stack trace: " . $e->getTraceAsString());
+                    $this->logger->info(">>> Finished scanning {$userCount} total users");
+                } catch (\Exception $e) {
+                    $this->logger->error(">>> FATAL ERROR in callForAllUsers: " . $e->getMessage());
+                    $this->logger->error(">>> Stack trace: " . $e->getTraceAsString());
+                }
             }
-        }
 
-        $this->logger->info("Scan complete. Found " . count($largeFiles) . " large media files (scanned {$totalScanned} total items)");
+            $this->logger->info("Scan complete. Found " . count($largeFiles) . " large media files (scanned {$totalScanned} total items)");
 
-        // Persist scanned files to the kanban board database
-        $this->logger->info(">>> Persisting " . count($largeFiles) . " files to database...");
-        $addedCount = 0;
-        $errorCount = 0;
+            // Persist scanned files to the kanban board database
+            $this->logger->info(">>> Persisting " . count($largeFiles) . " files to database...");
+            $addedCount = 0;
+            $errorCount = 0;
 
-        foreach ($largeFiles as $fileInfo) {
-            try {
-                $this->logger->debug(">>> Adding to DB: {$fileInfo['name']} (owner: {$fileInfo['owner']})");
-                $this->stateService->addMediaItem(
-                    $fileInfo['id'],
-                    $fileInfo['name'],
-                    $fileInfo['path'],
-                    $fileInfo['size'],
-                    'found', // Initial state is "found"
-                    $fileInfo['owner'] // Pass the file owner for background job context
-                );
-                $addedCount++;
-            } catch (\Exception $e) {
-                $errorCount++;
-                $this->logger->error(">>> FAILED to add '{$fileInfo['name']}' to database: {$e->getMessage()}");
-                $this->logger->error(">>> Stack trace: " . $e->getTraceAsString());
+            foreach ($largeFiles as $fileInfo) {
+                try {
+                    $this->logger->debug(">>> Adding to DB: {$fileInfo['name']} (owner: {$fileInfo['owner']})");
+                    $this->stateService->addMediaItem(
+                        $fileInfo['id'],
+                        $fileInfo['name'],
+                        $fileInfo['path'],
+                        $fileInfo['size'],
+                        'found', // Initial state is "found"
+                        $fileInfo['owner'] // Pass the file owner for background job context
+                    );
+                    $addedCount++;
+                } catch (\Exception $e) {
+                    $errorCount++;
+                    $this->logger->error(">>> FAILED to add '{$fileInfo['name']}' to database: {$e->getMessage()}");
+                    $this->logger->error(">>> Stack trace: " . $e->getTraceAsString());
+                }
             }
+
+            $this->logger->info(">>> Database persistence complete: {$addedCount} added, {$errorCount} errors");
+        } finally {
+            // Always clear the scanning flag, even if there was an error
+            $this->setScanStatus([
+                'is_scanning' => false,
+                'completed_at' => time(),
+                'files_found' => count($largeFiles),
+            ]);
+            $this->logger->info('>>> Scan status cleared: is_scanning=false');
         }
-
-        $this->logger->info(">>> Database persistence complete: {$addedCount} added, {$errorCount} errors");
-
-        // Set scan status to complete
-        $this->setScanStatus([
-            'is_scanning' => false,
-            'completed_at' => time(),
-            'files_found' => count($largeFiles),
-        ]);
 
         return $largeFiles;
     }
@@ -371,5 +382,17 @@ class MediaScannerService {
         $currentStatus = json_decode($statusJson, true) ?: [];
         $newStatus = array_merge($currentStatus, $status);
         $this->config->setAppValue('downtranscoder', self::SCAN_STATUS_KEY, json_encode($newStatus));
+    }
+
+    /**
+     * Set the scanning flag (public method for API controller)
+     *
+     * @param bool $isScanning Whether a scan is in progress
+     */
+    public function setScanning(bool $isScanning): void {
+        $this->setScanStatus([
+            'is_scanning' => $isScanning,
+            'started_at' => $isScanning ? time() : null,
+        ]);
     }
 }

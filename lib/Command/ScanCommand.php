@@ -25,6 +25,14 @@ class ScanCommand extends Command {
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int {
+        // Check if a scan is already running
+        $status = $this->scannerService->getScanStatus();
+        if ($status['is_scanning'] ?? false) {
+            $output->writeln('<error>A scan is already in progress.</error>');
+            $output->writeln('Please wait for the current scan to complete before starting a new one.');
+            return Command::FAILURE;
+        }
+
         $output->writeln('<info>Scanning for large media files...</info>');
         $output->writeln('');
 

@@ -49,7 +49,7 @@ class ApiController extends Controller {
         try {
             $this->logger->info('=== API SCAN ENDPOINT CALLED ===');
 
-            // Check if a scan is already running
+            // Check if a scan is already running and set the flag atomically
             $status = $this->scannerService->getScanStatus();
             $this->logger->info('Current scan status: ' . json_encode($status));
 
@@ -59,8 +59,12 @@ class ApiController extends Controller {
                     'success' => false,
                     'message' => 'A scan is already in progress',
                     'status' => $status
-                ]);
+                ], Http::STATUS_CONFLICT);
             }
+
+            // Set the scanning flag immediately to prevent race condition
+            $this->scannerService->setScanning(true);
+            $this->logger->info('Set is_scanning flag to true');
 
             // RUN SCAN IMMEDIATELY in background using exec
             $this->logger->info('Starting IMMEDIATE background scan...');
@@ -96,7 +100,9 @@ class ApiController extends Controller {
                     'message' => 'Scan started in background'
                 ]);
             } catch (\Exception $e) {
-                $this->logger->error('Failed to start background scan: ' . $e->getMessage());
+                // Reset the scanning flag if we failed to start the scan
+                $this->scannerService->setScanning(false);
+                $this->logger->error('Failed to start background scan, cleared is_scanning flag: ' . $e->getMessage());
                 $this->logger->error('Stack trace: ' . $e->getTraceAsString());
                 throw $e;
             }

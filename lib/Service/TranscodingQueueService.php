@@ -371,6 +371,18 @@ class TranscodingQueueService {
     }
 
     /**
+     * Clear transcoding status (abort all tasks)
+     */
+    public function clearStatus(): void {
+        $this->config->setAppValue('downtranscoder', self::STATUS_KEY, json_encode([
+            'is_transcoding' => false,
+            'current_index' => 0,
+            'total_items' => 0,
+            'current_file' => null,
+        ]));
+    }
+
+    /**
      * Delete original file after transcoding
      *
      * @param int $fileId Database ID (not file ID)

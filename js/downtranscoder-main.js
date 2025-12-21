@@ -32,6 +32,7 @@
 	KanbanApp.prototype.init = function() {
 		this.render();
 		this.loadMediaItems();
+		this.checkInitialScanStatus();
 		this.startStatusPolling();
 	};
 
@@ -263,8 +264,22 @@
 			});
 	};
 
+	KanbanApp.prototype.checkInitialScanStatus = function() {
+		var self = this;
+		this.ajax('GET', OC.generateUrl('/apps/downtranscoder/api/v1/scan/status'))
+			.then(function(scanStatus) {
+				self.updateScanButton(scanStatus);
+			})
+			.catch(function(error) {
+				console.error('Error getting initial scan status:', error);
+			});
+	};
+
 	KanbanApp.prototype.triggerScan = function() {
-		if (this.isScanning) return;
+		if (this.isScanning) {
+			OC.Notification.showTemporary('A scan is already in progress', { type: 'info' });
+			return;
+		}
 
 		var btn = document.getElementById('btn-scan');
 		var self = this;
@@ -281,13 +296,12 @@
 					btn.innerHTML = '<span class="icon-loading-small"></span> Scanning...';
 					OC.Notification.showTemporary('Scan started in background');
 				} else {
+					// Scan already in progress (status 409 is handled by ajax as resolve)
 					OC.Notification.showTemporary(response.message || 'Scan already in progress', { type: 'info' });
 				}
 			})
 			.catch(function(error) {
 				console.error('DownTranscoder: Error starting scan:', error);
-				btn.disabled = false;
-				btn.innerHTML = '<span class="icon-category-office"></span> Scan Media';
 				OC.Notification.showTemporary('Failed to start scan: ' + error, { type: 'error' });
 			});
 	};
@@ -570,6 +584,15 @@
 						resolve(JSON.parse(xhr.responseText));
 					} catch (e) {
 						resolve(xhr.responseText);
+					}
+				} else if (xhr.status === 409) {
+					// Handle conflict (scan already in progress)
+					try {
+						var response = JSON.parse(xhr.responseText);
+						// Resolve with success=false so the caller can show the message
+						resolve(response);
+					} catch (e) {
+						reject(new Error('HTTP ' + xhr.status));
 					}
 				} else {
 					reject(new Error('HTTP ' + xhr.status));
