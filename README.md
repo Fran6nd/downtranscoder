@@ -71,6 +71,8 @@ That's it! No build step needed.
 
 1. Go to **Settings** → **Administration** → **DownTranscoder**
 2. Configure your settings:
+   - **Access Control**:
+     - **Restrict to Admins Only**: When enabled (default), only administrators can access the app. Disable to allow all users to transcode their own files.
    - **Trigger Size**: Files larger than this will be identified for transcoding (e.g., 10 GB)
    - **Video Codec**: Choose H.265 (HEVC) for best compression
    - **Video CRF**: 23-28 recommended (higher = smaller file, lower quality)
@@ -80,6 +82,42 @@ That's it! No build step needed.
    - **Enable Scheduled Transcoding**: When enabled, automatic transcoding only runs at the specified time
    - **Scheduled Time**: Daily time to start transcoding (e.g., 02:00)
    - **Auto-Delete Originals**: ⚠️ Use with extreme caution
+
+## Security & User Access
+
+### Admin-Only Mode (Default)
+
+By default, the app is configured to be **admin-only**. This means:
+
+- Only Nextcloud administrators can access the app interface
+- Only admins can scan for large files and manage transcoding
+- Regular users will see an "Access Denied" error if they try to access the app
+
+This is the recommended configuration for shared Nextcloud instances to prevent unauthorized transcoding operations.
+
+### Multi-User Mode
+
+To allow all authenticated users to use the app:
+
+1. Go to **Settings** → **Administration** → **DownTranscoder**
+2. Uncheck **"Restrict to Admins Only"**
+3. Click **Save Settings**
+
+When admin-only mode is disabled:
+- Each user can only see and transcode their own files
+- Users cannot see or modify other users' files
+- All queue operations are isolated per user
+- File ownership is strictly enforced throughout the app
+
+### User Isolation Features
+
+The app implements comprehensive user isolation:
+
+- **Database queries** filter by `user_id`
+- **State changes** verify ownership before allowing modifications
+- **File scanning** respects Nextcloud file permissions
+- **Transcoding operations** only access files owned by the requesting user
+- **CLI commands** require explicit `--user` parameter for user-specific operations
 
 ### Recommended FFmpeg Settings for Size Reduction
 
@@ -175,11 +213,18 @@ DownTranscoder provides comprehensive CLI commands for automation and scripting:
 #### Scan for Large Files
 
 ```bash
-# Scan for files exceeding the configured trigger size
+# Scan all users' files for large media (admin operation)
 php occ downtranscoder:scan
+
+# Scan files for a specific user only
+php occ downtranscoder:scan --user USERNAME
+php occ downtranscoder:scan -u USERNAME
 ```
 
 Displays a table of found files with ID, name, size, type, and path, plus statistics.
+
+**Options:**
+- `--user, -u` - Scan files only for a specific user. If omitted, scans all users (requires admin privileges).
 
 #### Queue Files for Transcoding
 
@@ -243,23 +288,28 @@ php occ downtranscoder:reset --dry-run
 Common workflows using the CLI:
 
 ```bash
-# 1. Complete workflow: scan → queue → transcode
+# 1. Complete workflow for a specific user: scan → queue → transcode
+php occ downtranscoder:scan --user john
+php occ downtranscoder:queue --user john --all
+php occ downtranscoder:transcode --start
+
+# 2. Scan all users (admin operation)
 php occ downtranscoder:scan
 php occ downtranscoder:queue --user admin --all
 php occ downtranscoder:transcode --start
 
-# 2. Selective queueing
-php occ downtranscoder:scan
-php occ downtranscoder:queue --user admin 123 456  # Queue specific files
+# 3. Selective queueing for a specific user
+php occ downtranscoder:scan --user alice
+php occ downtranscoder:queue --user alice 123 456  # Queue specific files
 php occ downtranscoder:transcode --start
 
-# 3. Monitor progress
+# 4. Monitor progress
 php occ downtranscoder:transcode --status
 
-# 4. View all items
+# 5. View all items
 php occ downtranscoder:transcode --list
 
-# 5. Start fresh
+# 6. Start fresh
 php occ downtranscoder:reset --dry-run  # Preview changes
 php occ downtranscoder:reset --force    # Actually reset
 ```

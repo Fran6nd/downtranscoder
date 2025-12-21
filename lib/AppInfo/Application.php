@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\DownTranscoder\AppInfo;
 
+use OCA\DownTranscoder\Middleware\AdminOnlyMiddleware;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -17,7 +18,8 @@ class Application extends App implements IBootstrap {
     }
 
     public function register(IRegistrationContext $context): void {
-        // Services are registered here if needed
+        // Register the admin-only middleware
+        $context->registerMiddleware(AdminOnlyMiddleware::class);
     }
 
     public function boot(IBootContext $context): void {

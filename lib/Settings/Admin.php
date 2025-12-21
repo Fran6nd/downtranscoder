@@ -23,6 +23,7 @@ class Admin implements ISettings {
         $resolutionPreset = $this->getResolutionPreset($maxWidth, $maxHeight);
 
         $parameters = [
+            'admin_only' => $this->config->getAppValue('downtranscoder', 'admin_only', 'true'),
             'trigger_size_gb' => $this->config->getAppValue('downtranscoder', 'trigger_size_gb', '10'),
             'video_codec' => $this->config->getAppValue('downtranscoder', 'video_codec', 'H265'),
             'video_crf' => $this->config->getAppValue('downtranscoder', 'video_crf', '23'),

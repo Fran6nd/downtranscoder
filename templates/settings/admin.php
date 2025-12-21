@@ -7,6 +7,18 @@ style('downtranscoder', 'admin');
     <h2><?php p($l->t('DownTranscoder Settings')); ?></h2>
 
     <div class="downtranscoder-settings">
+        <h3><?php p($l->t('Access Control')); ?></h3>
+
+        <p>
+            <input type="checkbox" id="admin-only" name="admin_only"
+                   class="checkbox" <?php if ($_['admin_only'] === 'true') p('checked'); ?> />
+            <label for="admin-only">
+                <?php p($l->t('Restrict to Admins Only')); ?>
+            </label>
+            <br>
+            <em><?php p($l->t('When enabled, only administrators can access this app. Regular users will see an access denied error.')); ?></em>
+        </p>
+
         <h3><?php p($l->t('General Settings')); ?></h3>
 
         <p>

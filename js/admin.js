@@ -23,6 +23,7 @@
                 const resolution = resolutionMap[resolutionPreset] || resolutionMap['4k'];
 
                 const settings = {
+                    admin_only: document.getElementById('admin-only').checked ? 'true' : 'false',
                     trigger_size_gb: document.getElementById('trigger-size-gb').value,
                     video_codec: document.getElementById('video-codec').value,
                     video_crf: document.getElementById('video-crf').value,

@@ -42,12 +42,13 @@ class MediaScannerService {
     }
 
     /**
-     * Scan all user files for large media files
+     * Scan user files for large media files
      *
+     * @param string|null $specificUserId If provided, scan only this user's files. If null, scan all users.
      * @return array Array of large media files with metadata
      */
-    public function scanForLargeFiles(): array {
-        $this->logger->info('>>> scanForLargeFiles() called');
+    public function scanForLargeFiles(?string $specificUserId = null): array {
+        $this->logger->info('>>> scanForLargeFiles() called' . ($specificUserId ? " for user: {$specificUserId}" : ' for ALL users'));
 
         // Check if already scanning
         $status = $this->getScanStatus();
@@ -106,41 +107,73 @@ class MediaScannerService {
                     $totalScanned += count($files);
                 }
             } else {
-                // Otherwise, scan all users
-                $this->logger->info(">>> No specific scan paths configured - scanning ALL USERS");
-                $userCount = 0;
+                // Otherwise, scan users
+                if ($specificUserId !== null) {
+                    // Scan specific user only
+                    $this->logger->info(">>> Scanning specific user: {$specificUserId}");
 
-                try {
-                    $this->userManager->callForAllUsers(function ($user) use ($triggerSizeBytes, $includeExternal, &$largeFiles, &$totalScanned, &$userCount) {
-                        $userCount++;
-                        $userId = $user->getUID();
-                        $this->logger->info(">>> [User #{$userCount}] Processing user: {$userId}");
+                    // Verify user exists
+                    if (!$this->userManager->userExists($specificUserId)) {
+                        $this->logger->error(">>> User '{$specificUserId}' does not exist");
+                        throw new \Exception("User '{$specificUserId}' does not exist");
+                    }
 
-                        try {
-                            // Get the user's folder
-                            $userFolder = $this->rootFolder->getUserFolder($userId);
-                            $folderPath = $userFolder->getPath();
-                            $this->logger->info(">>> [User {$userId}] Got user folder: {$folderPath}");
+                    try {
+                        $userFolder = $this->rootFolder->getUserFolder($specificUserId);
+                        $folderPath = $userFolder->getPath();
+                        $this->logger->info(">>> [User {$specificUserId}] Got user folder: {$folderPath}");
 
-                            if ($userFolder instanceof Folder) {
-                                $this->logger->info(">>> [User {$userId}] Starting folder scan (includeExternal: " . ($includeExternal ? 'YES' : 'NO') . ")...");
-                                $files = $this->scanFolder($userFolder, $triggerSizeBytes, $includeExternal);
-                                $largeFiles = array_merge($largeFiles, $files);
-                                $totalScanned += count($files);
-                                $this->logger->info(">>> [User {$userId}] RESULT: Found " . count($files) . " large files (total so far: " . count($largeFiles) . ")");
-                            } else {
-                                $this->logger->error(">>> [User {$userId}] ERROR: User folder is not a Folder instance!");
-                            }
-                        } catch (\Exception $e) {
-                            $this->logger->error(">>> [User {$userId}] EXCEPTION: " . $e->getMessage());
-                            $this->logger->error(">>> [User {$userId}] Stack trace: " . $e->getTraceAsString());
+                        if ($userFolder instanceof Folder) {
+                            $this->logger->info(">>> [User {$specificUserId}] Starting folder scan (includeExternal: " . ($includeExternal ? 'YES' : 'NO') . ")...");
+                            $files = $this->scanFolder($userFolder, $triggerSizeBytes, $includeExternal);
+                            $largeFiles = array_merge($largeFiles, $files);
+                            $totalScanned += count($files);
+                            $this->logger->info(">>> [User {$specificUserId}] RESULT: Found " . count($files) . " large files");
+                        } else {
+                            $this->logger->error(">>> [User {$specificUserId}] ERROR: User folder is not a Folder instance!");
                         }
-                    });
+                    } catch (\Exception $e) {
+                        $this->logger->error(">>> [User {$specificUserId}] EXCEPTION: " . $e->getMessage());
+                        $this->logger->error(">>> [User {$specificUserId}] Stack trace: " . $e->getTraceAsString());
+                        throw $e;
+                    }
+                } else {
+                    // Scan all users
+                    $this->logger->info(">>> No specific scan paths configured - scanning ALL USERS");
+                    $userCount = 0;
 
-                    $this->logger->info(">>> Finished scanning {$userCount} total users");
-                } catch (\Exception $e) {
-                    $this->logger->error(">>> FATAL ERROR in callForAllUsers: " . $e->getMessage());
-                    $this->logger->error(">>> Stack trace: " . $e->getTraceAsString());
+                    try {
+                        $this->userManager->callForAllUsers(function ($user) use ($triggerSizeBytes, $includeExternal, &$largeFiles, &$totalScanned, &$userCount) {
+                            $userCount++;
+                            $userId = $user->getUID();
+                            $this->logger->info(">>> [User #{$userCount}] Processing user: {$userId}");
+
+                            try {
+                                // Get the user's folder
+                                $userFolder = $this->rootFolder->getUserFolder($userId);
+                                $folderPath = $userFolder->getPath();
+                                $this->logger->info(">>> [User {$userId}] Got user folder: {$folderPath}");
+
+                                if ($userFolder instanceof Folder) {
+                                    $this->logger->info(">>> [User {$userId}] Starting folder scan (includeExternal: " . ($includeExternal ? 'YES' : 'NO') . ")...");
+                                    $files = $this->scanFolder($userFolder, $triggerSizeBytes, $includeExternal);
+                                    $largeFiles = array_merge($largeFiles, $files);
+                                    $totalScanned += count($files);
+                                    $this->logger->info(">>> [User {$userId}] RESULT: Found " . count($files) . " large files (total so far: " . count($largeFiles) . ")");
+                                } else {
+                                    $this->logger->error(">>> [User {$userId}] ERROR: User folder is not a Folder instance!");
+                                }
+                            } catch (\Exception $e) {
+                                $this->logger->error(">>> [User {$userId}] EXCEPTION: " . $e->getMessage());
+                                $this->logger->error(">>> [User {$userId}] Stack trace: " . $e->getTraceAsString());
+                            }
+                        });
+
+                        $this->logger->info(">>> Finished scanning {$userCount} total users");
+                    } catch (\Exception $e) {
+                        $this->logger->error(">>> FATAL ERROR in callForAllUsers: " . $e->getMessage());
+                        $this->logger->error(">>> Stack trace: " . $e->getTraceAsString());
+                    }
                 }
             }
 

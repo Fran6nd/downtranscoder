@@ -8,6 +8,7 @@ use OCA\DownTranscoder\Service\MediaScannerService;
 use OCA\DownTranscoder\Util\FormatHelper;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Helper\Table;
 
@@ -22,7 +23,13 @@ class ScanCommand extends Command {
     protected function configure(): void {
         $this
             ->setName('downtranscoder:scan')
-            ->setDescription('Scan for large media files that exceed the configured trigger size');
+            ->setDescription('Scan for large media files that exceed the configured trigger size')
+            ->addOption(
+                'user',
+                'u',
+                InputOption::VALUE_REQUIRED,
+                'Scan files only for a specific user (if not specified, scans all users)'
+            );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int {
@@ -34,10 +41,16 @@ class ScanCommand extends Command {
             return Command::FAILURE;
         }
 
-        $output->writeln('<info>Scanning for large media files...</info>');
+        $userId = $input->getOption('user');
+
+        if ($userId) {
+            $output->writeln("<info>Scanning for large media files for user: {$userId}...</info>");
+        } else {
+            $output->writeln('<info>Scanning for large media files (all users)...</info>');
+        }
         $output->writeln('');
 
-        $files = $this->scannerService->scanForLargeFiles();
+        $files = $this->scannerService->scanForLargeFiles($userId);
 
         if (empty($files)) {
             $output->writeln('<comment>No large media files found.</comment>');
