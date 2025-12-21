@@ -102,7 +102,7 @@ class MediaScannerService {
             $userCount = 0;
 
             try {
-                $this->userManager->callForAllUsers(function ($user) use ($triggerSizeBytes, &$largeFiles, &$totalScanned, &$userCount) {
+                $this->userManager->callForAllUsers(function ($user) use ($triggerSizeBytes, $includeExternal, &$largeFiles, &$totalScanned, &$userCount) {
                     $userCount++;
                     $userId = $user->getUID();
                     $this->logger->info(">>> [User #{$userCount}] Processing user: {$userId}");
