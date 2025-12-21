@@ -71,6 +71,13 @@ style('downtranscoder', 'admin');
             <em><?php p($l->t('Videos above this resolution will be downscaled. Lower resolution videos will NOT be upscaled.')); ?></em>
         </p>
 
+        <p>
+            <label for="max-ffmpeg-threads"><?php p($l->t('Max FFmpeg Threads')); ?></label>
+            <input type="number" id="max-ffmpeg-threads" name="max_ffmpeg_threads"
+                   value="<?php p($_['max_ffmpeg_threads']); ?>" min="0" />
+            <em><?php p($l->t('Maximum CPU threads for FFmpeg transcoding. 0 = auto (use all available threads)')); ?></em>
+        </p>
+
         <h3><?php p($l->t('Image Settings')); ?></h3>
 
         <p>

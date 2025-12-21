@@ -27,6 +27,7 @@ class Admin implements ISettings {
             'video_codec' => $this->config->getAppValue('downtranscoder', 'video_codec', 'H265'),
             'video_crf' => $this->config->getAppValue('downtranscoder', 'video_crf', '23'),
             'max_video_resolution' => $resolutionPreset,
+            'max_ffmpeg_threads' => $this->config->getAppValue('downtranscoder', 'max_ffmpeg_threads', '0'),
             'image_quality' => $this->config->getAppValue('downtranscoder', 'image_quality', '85'),
             'max_image_width' => $this->config->getAppValue('downtranscoder', 'max_image_width', '1920'),
             'max_image_height' => $this->config->getAppValue('downtranscoder', 'max_image_height', '1080'),

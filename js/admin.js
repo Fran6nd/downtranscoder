@@ -28,6 +28,7 @@
                     video_crf: document.getElementById('video-crf').value,
                     max_video_width: resolution.width,
                     max_video_height: resolution.height,
+                    max_ffmpeg_threads: document.getElementById('max-ffmpeg-threads').value,
                     image_quality: document.getElementById('image-quality').value,
                     max_image_width: document.getElementById('max-image-width').value,
                     max_image_height: document.getElementById('max-image-height').value,

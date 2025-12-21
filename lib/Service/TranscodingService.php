@@ -90,6 +90,7 @@ class TranscodingService {
 
         $maxWidth = (int) $this->config->getAppValue('downtranscoder', 'max_video_width', '3840');
         $maxHeight = (int) $this->config->getAppValue('downtranscoder', 'max_video_height', '2160');
+        $maxThreads = (int) $this->config->getAppValue('downtranscoder', 'max_ffmpeg_threads', '0');
 
         $codecName = $this->getCodecName($videoCodec);
 
@@ -108,11 +109,18 @@ class TranscodingService {
             $scaleFilter = sprintf("-vf \"scale=-2:'min(%d,ih)'\"", $maxHeight);
         }
 
+        // Build threads parameter
+        $threadsParam = '';
+        if ($maxThreads > 0) {
+            $threadsParam = sprintf('-threads %d', $maxThreads);
+        }
+
         // Add -progress flag to get detailed progress output
         // Note: -progress must come before -i
         $command = sprintf(
-            'ffmpeg -progress pipe:2 -i %s -c:v %s -crf %s %s -c:a copy -movflags +faststart %s',
+            'ffmpeg -progress pipe:2 -i %s %s -c:v %s -crf %s %s -c:a copy -movflags +faststart %s',
             escapeshellarg($inputPath),
+            $threadsParam,
             escapeshellarg($codecName),
             escapeshellarg($videoCRF),
             $scaleFilter,
