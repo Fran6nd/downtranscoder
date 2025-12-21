@@ -6,6 +6,7 @@ namespace OCA\DownTranscoder\Command;
 
 use OCA\DownTranscoder\Service\TranscodingQueueService;
 use OCA\DownTranscoder\Service\MediaStateService;
+use OCA\DownTranscoder\Util\FormatHelper;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -43,30 +44,60 @@ class TranscodeCommand extends Command {
             )
             ->addOption(
                 'status',
-                null,
+                't',
                 InputOption::VALUE_NONE,
                 'Show transcoding status'
             );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int {
+        $start = $input->getOption('start');
+        $list = $input->getOption('list');
+        $status = $input->getOption('status');
+
+        // Count how many options are set
+        $optionsSet = 0;
+        if ($start) $optionsSet++;
+        if ($list) $optionsSet++;
+        if ($status) $optionsSet++;
+
+        // Validate mutually exclusive options
+        if ($optionsSet > 1) {
+            $output->writeln('<error>Error: Only one option can be used at a time.</error>');
+            $output->writeln('');
+            $output->writeln('Usage: downtranscoder:transcode [--start|--list|--status]');
+            $output->writeln('');
+            $output->writeln('Options:');
+            $output->writeln('  -s, --start   Start transcoding all queued files');
+            $output->writeln('  -l, --list    List all media items by state');
+            $output->writeln('  -t, --status  Show transcoding status');
+            return Command::INVALID;
+        }
+
         // List media items
-        if ($input->getOption('list')) {
+        if ($list) {
             return $this->listMediaItems($output);
         }
 
         // Show status
-        if ($input->getOption('status')) {
+        if ($status) {
             return $this->showStatus($output);
         }
 
         // Start transcoding
-        if ($input->getOption('start')) {
+        if ($start) {
             return $this->startTranscoding($output);
         }
 
         // No options provided, show usage
-        $output->writeln('<comment>Please specify an option. Use --help for available options.</comment>');
+        $output->writeln('<comment>Please specify an option.</comment>');
+        $output->writeln('');
+        $output->writeln('Usage: downtranscoder:transcode [--start|--list|--status]');
+        $output->writeln('');
+        $output->writeln('Options:');
+        $output->writeln('  -s, --start   Start transcoding all queued files');
+        $output->writeln('  -l, --list    List all media items by state');
+        $output->writeln('  -t, --status  Show transcoding status');
         return Command::INVALID;
     }
 
@@ -85,14 +116,13 @@ class TranscodeCommand extends Command {
         $table->setHeaders(['ID', 'Name', 'Size (GB)', 'State', 'Preset', 'Updated']);
 
         foreach ($allItems as $item) {
-            $sizeGB = $item['size'] / (1024 * 1024 * 1024);
             $updatedAt = date('Y-m-d H:i:s', $item['updatedAt']);
             $preset = $item['transcodePreset'] ?? 'default';
 
             $table->addRow([
                 $item['id'],
                 $item['name'],
-                number_format($sizeGB, 2),
+                FormatHelper::formatSizeGB($item['size']),
                 $item['state'],
                 $preset,
                 $updatedAt
@@ -149,11 +179,12 @@ class TranscodeCommand extends Command {
 
         if ($success) {
             $output->writeln('');
-            $output->writeln('<info>Transcoding completed.</info>');
+            $output->writeln('<info>Transcoding started successfully.</info>');
+            $output->writeln('Use <comment>occ downtranscoder:transcode --status</comment> to monitor progress.');
             return Command::SUCCESS;
         } else {
             $output->writeln('');
-            $output->writeln('<error>Transcoding failed. Check logs for details.</error>');
+            $output->writeln('<error>Failed to start transcoding. Check logs for details.</error>');
             return Command::FAILURE;
         }
     }

@@ -40,6 +40,7 @@
     </settings>
     <commands>
         <command>OCA\DownTranscoder\Command\ScanCommand</command>
+        <command>OCA\DownTranscoder\Command\QueueCommand</command>
         <command>OCA\DownTranscoder\Command\TranscodeCommand</command>
         <command>OCA\DownTranscoder\Command\ResetCommand</command>
     </commands>

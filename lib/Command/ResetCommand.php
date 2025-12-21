@@ -38,11 +38,63 @@ class ResetCommand extends Command {
                 'f',
                 InputOption::VALUE_NONE,
                 'Skip confirmation prompt'
+            )
+            ->addOption(
+                'dry-run',
+                'd',
+                InputOption::VALUE_NONE,
+                'Show what would be reset without actually doing it'
             );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int {
         $force = $input->getOption('force');
+        $dryRun = $input->getOption('dry-run');
+
+        // Dry run mode - show what would be reset
+        if ($dryRun) {
+            $output->writeln('<info>DRY RUN - No changes will be made</info>');
+            $output->writeln('');
+            $output->writeln('The following actions would be performed:');
+            $output->writeln('');
+
+            // Get current state information
+            try {
+                $allItems = $this->stateService->getAllMediaItems();
+                $output->writeln(sprintf('  <comment>✓</comment> Clear database: %d media items would be deleted', count($allItems)));
+            } catch (\Exception $e) {
+                $output->writeln('  <comment>✓</comment> Clear database: Unable to count items');
+            }
+
+            try {
+                $scanStatus = $this->scannerService->getScanStatus();
+                if ($scanStatus['is_scanning'] ?? false) {
+                    $output->writeln('  <comment>✓</comment> Abort scan: Active scan would be stopped');
+                } else {
+                    $output->writeln('  <comment>○</comment> Abort scan: No active scan to stop');
+                }
+            } catch (\Exception $e) {
+                $output->writeln('  <comment>○</comment> Abort scan: Unable to check status');
+            }
+
+            try {
+                $transcodeStatus = $this->queueService->getStatus();
+                if ($transcodeStatus['is_transcoding'] ?? false) {
+                    $output->writeln('  <comment>✓</comment> Abort transcoding: Active transcoding would be stopped');
+                } else {
+                    $output->writeln('  <comment>○</comment> Abort transcoding: No active transcoding to stop');
+                }
+            } catch (\Exception $e) {
+                $output->writeln('  <comment>○</comment> Abort transcoding: Unable to check status');
+            }
+
+            $output->writeln('');
+            $output->writeln('To actually perform the reset, run without --dry-run:');
+            $output->writeln('  <comment>occ downtranscoder:reset</comment>');
+            $output->writeln('  <comment>occ downtranscoder:reset --force</comment> (skip confirmation)');
+
+            return Command::SUCCESS;
+        }
 
         // Confirmation prompt unless --force is used
         if (!$force) {

@@ -9,10 +9,12 @@
 * **Kanban Board UI** - Visual drag-and-drop interface for managing media workflow
 * Set a **trigger size** (e.g., 10 GB) to identify large videos or images
 * Scan your Nextcloud files and list all media exceeding the trigger size
-* **4-Column Workflow**:
+* **6-Column Workflow**:
   - Media Found - Scanned files
   - To Transcode - Queued for processing
-  - Transcoded - Waiting for original deletion
+  - Transcoding - Currently being processed
+  - Transcoded - Successfully transcoded, waiting for original deletion
+  - Aborted - Failed or cancelled transcoding
   - Discard - Files to ignore
 * Drag and drop files between columns with persistent state
 * Background job support for automatic transcoding
@@ -48,8 +50,6 @@
 2. Place the `downtranscoder` folder in your Nextcloud `apps/` directory
 3. (Optional) Run `cd apps/downtranscoder && composer install` if you have composer
 4. Enable the app in Nextcloud: **Apps** → **Multimedia** → **DownTranscoder** → **Enable**
-
-**No Node.js, npm, or build step required!** The app uses vanilla JavaScript and Nextcloud's built-in libraries.
 
 ### Updating the App
 
@@ -168,14 +168,100 @@ See [USAGE.md](USAGE.md) for detailed usage instructions and troubleshooting.
 5. Click **Add Selected to Queue**
 6. Files will be transcoded by the background job
 
-### Via occ Command
+### Via occ Command Line Interface
+
+DownTranscoder provides comprehensive CLI commands for automation and scripting:
+
+#### Scan for Large Files
 
 ```bash
-# Scan for large files
+# Scan for files exceeding the configured trigger size
 php occ downtranscoder:scan
+```
 
-# Start transcoding queued files
-php occ downtranscoder:transcode
+Displays a table of found files with ID, name, size, type, and path, plus statistics.
+
+#### Queue Files for Transcoding
+
+```bash
+# Queue specific files by ID (requires --user option)
+php occ downtranscoder:queue --user USERNAME <file-id> [<file-id>...]
+
+# Queue all files in "found" state
+php occ downtranscoder:queue --user USERNAME --all
+
+# Examples
+php occ downtranscoder:queue --user admin 123 456 789
+php occ downtranscoder:queue --user admin --all
+```
+
+**Options:**
+- `--user, -u` - User ID (required for CLI context)
+- `--all, -a` - Queue all files in "found" state
+
+#### Manage Transcoding
+
+```bash
+# Start transcoding all queued files
+php occ downtranscoder:transcode --start
+
+# List all media items by state
+php occ downtranscoder:transcode --list
+
+# Show current transcoding status
+php occ downtranscoder:transcode --status
+```
+
+**Options:**
+- `--start, -s` - Start transcoding all queued files
+- `--list, -l` - List all media items with their states
+- `--status, -t` - Show transcoding progress and statistics
+
+**Note:** Only one option can be used at a time.
+
+#### Reset Everything
+
+```bash
+# Reset with confirmation prompt
+php occ downtranscoder:reset
+
+# Reset without confirmation
+php occ downtranscoder:reset --force
+
+# Preview what would be reset (dry run)
+php occ downtranscoder:reset --dry-run
+```
+
+**Options:**
+- `--force, -f` - Skip confirmation prompt
+- `--dry-run, -d` - Show what would be reset without actually doing it
+
+**Warning:** Reset clears all media items, aborts running scans, and stops transcoding tasks.
+
+#### CLI Quick Reference
+
+Common workflows using the CLI:
+
+```bash
+# 1. Complete workflow: scan → queue → transcode
+php occ downtranscoder:scan
+php occ downtranscoder:queue --user admin --all
+php occ downtranscoder:transcode --start
+
+# 2. Selective queueing
+php occ downtranscoder:scan
+php occ downtranscoder:queue --user admin 123 456  # Queue specific files
+php occ downtranscoder:transcode --start
+
+# 3. Monitor progress
+php occ downtranscoder:transcode --status
+
+# 4. View all items
+php occ downtranscoder:transcode --list
+
+# 5. Start fresh
+php occ downtranscoder:reset --dry-run  # Preview changes
+php occ downtranscoder:reset --force    # Actually reset
 ```
 
 ### Via API
@@ -242,7 +328,9 @@ downtranscoder/
 │   │   └── TranscodingService.php       ✅
 │   ├── Command/
 │   │   ├── ScanCommand.php              ✅
-│   │   └── TranscodeCommand.php         ✅
+│   │   ├── QueueCommand.php             ✅
+│   │   ├── TranscodeCommand.php         ✅
+│   │   └── ResetCommand.php             ✅
 │   ├── BackgroundJob/
 │   │   └── TranscodeJob.php             ✅
 │   └── Settings/
@@ -267,7 +355,7 @@ downtranscoder/
 - ✅ Media scanner service (scans Nextcloud files for large media)
 - ✅ Transcoding queue management
 - ✅ FFmpeg transcoding service (videos and images)
-- ✅ occ CLI commands (`scan`, `transcode`)
+- ✅ occ CLI commands (`scan`, `queue`, `transcode`, `reset`)
 - ✅ Background job for automatic transcoding
 - ✅ REST API endpoints
 - ✅ Admin settings page with scan & review UI

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\DownTranscoder\Command;
 
 use OCA\DownTranscoder\Service\MediaScannerService;
+use OCA\DownTranscoder\Util\FormatHelper;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -54,7 +55,7 @@ class ScanCommand extends Command {
             $table->addRow([
                 $file['id'],
                 $file['name'],
-                number_format($file['sizeGB'], 2),
+                FormatHelper::formatSizeGB($file['size']),
                 $file['type'],
                 $file['path']
             ]);
@@ -73,10 +74,12 @@ class ScanCommand extends Command {
         $output->writeln(sprintf('  Total files: %d', count($files)));
         $output->writeln(sprintf('  Videos: %d', $videoCount));
         $output->writeln(sprintf('  Images: %d', $imageCount));
-        $output->writeln(sprintf('  Total size: %.2f GB', $totalSize / (1024 * 1024 * 1024)));
+        $output->writeln(sprintf('  Total size: %s GB', FormatHelper::formatSizeGB($totalSize)));
 
         $output->writeln('');
-        $output->writeln('<comment>Use "occ downtranscoder:queue <file-id>" to add files to the transcode queue.</comment>');
+        $output->writeln('To queue files for transcoding:');
+        $output->writeln('  <comment>occ downtranscoder:queue --user USERNAME <file-id> [<file-id>...]</comment>');
+        $output->writeln('  <comment>occ downtranscoder:queue --user USERNAME --all</comment>');
 
         return Command::SUCCESS;
     }
